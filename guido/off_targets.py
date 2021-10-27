@@ -1,127 +1,132 @@
 import tempfile
 import subprocess
-from io import StringIO
-import pandas as pd
-from shutil import which
 
 from pathlib import Path
-from typing import List, Dict, Tuple, Union, Optional
+from typing import Union
+
+from guido.helpers import rev_comp
 
 # TODO typing
+# TODO assuming PAM has at least one arbitrary nucleotide
 
 
-def is_tool(name):
-    """Check whether `name` is on PATH and marked as executable."""
-    # from whichcraft import which
-    return which(name) is not None
+def _parse_mismatches(mismatches: str, strand: str, seq_len: int):
+    mm_split = mismatches.split(",")
+    mm_dict = {}
+    for m in mm_split:
+        pos, c = m.split(":")
+        c = c.split(">")
+
+        if strand == "-":
+            mm_dict[seq_len - int(pos)] = rev_comp(c[0])
+        else:
+            mm_dict[seq_len - int(pos)] = c[0]
+    return mm_dict
+
+
+def _hit_is_valid(mismatches: dict, non_arbitrary_positions: list):
+    return all(
+        [False if pos in non_arbitrary_positions else True for pos in mismatches.keys()]
+    )
 
 
 def run_bowtie(
     guides: list,
-    pam: str,
-    genome_index_path: Union[Path, str],
-    max_offtargets: int = 10,
+    pam: str = "NGG",
+    core_length: int = 10,
+    core_mismatches: int = 0,
+    total_mismatches: int = 4,
+    genome_index_path: Union[str, Path] = None,
     threads: int = 1,
-    bowtie_path: Optional[Union[Path, str]] = "",
-) -> tuple:
-    mismatches = 3
-    # create temporary file for bowtie input
-    with tempfile.NamedTemporaryFile(mode="w+t", prefix="guido_") as temp:
-        temp.write(
-            "\n".join(
-                [
-                    ">{}|{}|{}|{}|{}\n{}".format(
-                        i,
-                        G.guide_chrom,
-                        G.guide_start,
-                        G.guide_end,
-                        G.guide_seq,
-                        G.guide_seq,
-                    )
-                    for i, G in enumerate(guides)
-                ]
-            )
-        )
-        temp.flush()
+    bowtie_path: str = "bin/bowtie/",
+) -> dict:
 
-        print(
-            "\n".join(
-                [
-                    ">{}|{}|{}|{}|{}\n{}".format(
-                        i,
-                        G.guide_chrom,
-                        G.guide_start,
-                        G.guide_end,
-                        G.guide_seq,
-                        G.guide_seq,
-                    )
-                    for i, G in enumerate(guides)
-                ]
-            ))
-        
-        # run bowtie alignment
-        bowtie_command = f"{bowtie_path}bowtie -p {threads} -v {mismatches} --sam --sam-nohead -k {max_offtargets} -x {genome_index_path} -f {temp.name}"
-        print(bowtie_command)
+    pam_mismatches = rev_comp(pam).count("N")
+    pam_length = len(pam)
+    off_targets = {}
+
+    with tempfile.NamedTemporaryFile(mode="w+t", prefix="guido_") as temp:
+        for i, G in enumerate(guides):
+            g_seq = rev_comp(G.guide_seq[:-pam_length] + pam)
+            temp.write(
+                f">{i}|{G.guide_chrom}|{G.guide_start}|{G.guide_end}|{g_seq}|{G.guide_strand}"
+            )
+            temp.write(f"\n{g_seq}\n")
+        temp.seek(0)
+
+        if (core_mismatches + pam_mismatches) > 3:
+            raise ValueError(
+                f"The value for the parameter core_mismatches is not valid: {core_mismatches}"
+            )
+
+        if core_mismatches > total_mismatches:
+            raise ValueError(
+                f"The value for core_mismatches cannot be greater than total_mismatches: {core_mismatches} > {total_mismatches}"
+            )
+
+        bowtie_command = (
+            f"{bowtie_path}bowtie -p {threads} --quiet -y "
+            f"-n {core_mismatches + pam_mismatches} "
+            f"-l {core_length + pam_length} "
+            f"-e {(total_mismatches * 30) + 30 } -a "
+            f"-x {genome_index_path} "
+            f"-f {temp.name}"
+        )
+
         rproc = subprocess.Popen(
             bowtie_command.split(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
         )
+
         stdout, stderr = rproc.communicate()
 
-    # output bowtie to pandas dataframe
-    targets = pd.read_csv(
-        StringIO(stdout),
-        sep="\t",
-        names=list(range(14)),
-        header=None,
-        index_col=False,
-        converters={3: int},
-    )
-    
-    # split sequence identification
-    nsplit = targets[0].str.split("|", n=4, expand=True)
-    nsplit.columns = ["id", "chrom", "start", "end", "seq"]
+        non_arbitrary_positions = [
+            21 + ix for ix, nucl in enumerate(pam) if nucl in ["A", "T", "G", "C"]
+        ]
 
-    # add it back to the target df
-    targets = pd.concat([targets, nsplit], axis=1)
-    targets["id"] = targets["id"].astype(int)
-    targets["start"] = targets["start"].astype(int)
+        # parse bowtie output
+        for line in stdout.split("\n"):
+            cols = line.split("\t")
 
-    # check if it's on-target
-    on_targets_idx = targets[
-        (targets[2] == targets["chrom"]) & (targets[3] == targets["start"])
-    ].index
+            if len(cols) > 1:
+                off_target = {}
+                ix, g_chrom, g_start, _, g_seq, _ = cols[0].split("|")
+                t_strand, t_chrom, t_start, t_seq, _, _, t_mismatches = cols[1:]
+                ix = int(ix)
 
-    # drop on-targets
-    targets = targets.drop(on_targets_idx)
+                if ix not in off_targets.keys():
+                    off_targets[ix] = []
 
-    # extract the number of mismatches in the off-target
-    targets["mm"] = targets.apply(lambda x: x[13].split(":")[-1], axis=1)
+                if t_strand == "-":
+                    t_strand = "+"
 
-    # count off-targets for a given guide
-    mismatches_count = (
-        targets.groupby(["id"])["mm"].value_counts().unstack().fillna(0).reset_index()
-    )
+                else:
+                    t_seq = rev_comp(t_seq)
+                    t_strand = "-"
 
-    # count mismatched off-targets
-    for m in ["0", "1", "2", "3"]:
-        if m not in mismatches_count:
-            mismatches_count[m] = 0
-    mismatches_count["id"] = mismatches_count["id"].astype(int)
+                mismatches = _parse_mismatches(t_mismatches, t_strand, len(t_seq))
 
-    # add mismatch info to the guide dict
-    guides_offtargets = {}
+                if (
+                    mismatches
+                    and _hit_is_valid(mismatches, non_arbitrary_positions)
+                    and (g_chrom != t_chrom and int(g_start) != (int(t_start) + 1))
+                ):
+                    mm_string = "".join(
+                        [
+                            mismatches[i + 1] if (i + 1) in mismatches.keys() else "."
+                            for i, _ in enumerate(g_seq)
+                        ]
+                    )
 
-    for ix, x in mismatches_count.iterrows():
-        i = int(x.id)
-        counts = x[["0", "1", "2", "3"]].to_dict()
-        guides_offtargets[i] = {}
-        guides_offtargets[i]["offtargets_dict"] = counts
-        guides_offtargets[i][
-            "offtargets_str"
-        ] = "{:0.0f}|{:0.0f}|{:0.0f}|{:0.0f}".format(*counts.values())
-        guides_offtargets[i]["offtargets_n"] = sum(counts.values())
+                    off_target["ix"] = ix
+                    off_target["mismatches"] = mismatches
+                    off_target["mismatches_string"] = mm_string
+                    off_target["chromosome"] = t_chrom
+                    off_target["start"] = int(t_start)
+                    off_target["strand"] = t_strand
 
-    return (guides_offtargets, targets, stdout)
+                    off_targets[ix].append(off_target)
+
+    return off_targets

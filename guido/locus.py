@@ -1,11 +1,10 @@
 from __future__ import annotations
-from os import name
 import re
 from numpy.lib.function_base import iterable
 import pandas as pd
 import pyranges
 
-from typing import Union, List, Set
+from typing import Union, Set
 from pyfaidx import Sequence, Fasta
 
 from guido.off_targets import run_bowtie
@@ -30,7 +29,7 @@ class Locus:
         self.start = start
         self.genome = genome
         self.annotation = annotation
-        self.pam = ''
+        self.pam = ""
         self.guides = []
 
         if isinstance(sequence, Sequence):
@@ -52,8 +51,15 @@ class Locus:
     def __iter__(self):
         return iterable(self.guides)
 
+    # TODO: length of the locus
     def __len__(self):
         return len(self.guides)
+
+    def guide(self, ix: int) -> Guide:
+        try:
+            return self.guides[ix]
+        except:
+            raise ValueError(f"Guide with index {ix} does not exist.")
 
     def _flatten_intervals(self, intervals):
         fi = []
@@ -138,10 +144,10 @@ class Locus:
 
         # save searched PAM
         self.pam = pam
-        
+
         # take default locus bounds
         loci_intervals = [[self.start, self.end]]
-        
+
         if "all" not in selected_features:
             try:
                 locus_annotation = self.annotation.query(
@@ -166,6 +172,7 @@ class Locus:
 
         # search for guides in each locus
         for locus_start, locus_end in loci_intervals:
+            print(locus_start, locus_end)
             if locus_start != self.start and locus_end != self.end:
                 locus_start -= self.start
                 locus_end -= self.start
@@ -203,15 +210,14 @@ class Locus:
             raise ValueError("No genome / locus specified.")
 
         if index_path:
-            guides_offtargets, targets = run_bowtie(
+            guides_bowtie_offtargets = run_bowtie(
                 guides=self.guides, pam=self.pam, genome_index_path=index_path, **kwargs
             )
 
-            if len(guides_offtargets.items()) > 0:
-                for ix, g in guides_offtargets.items():
-                    self.guides[ix].offtargets_str = g["offtargets_str"]
-                    self.guides[ix].offtargets_n = g["offtargets_n"]
-                    self.guides[ix].offtargets_dict = g["offtargets_dict"]
+            for ix, G in enumerate(self.guides):
+                if ix in guides_bowtie_offtargets.keys():
+                    G.off_targets_dict = guides_bowtie_offtargets[ix]
+
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")
 

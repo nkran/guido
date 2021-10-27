@@ -1,5 +1,3 @@
-from typing import List, Dict, Tuple
-
 from guido.mmej import generate_mmej_patterns
 from guido.off_targets import run_bowtie
 from guido.genome import Genome
@@ -63,9 +61,7 @@ class Guide:
         self.mmej_oof_score: float = 0
 
         # Off-targets
-        self.offtargets_str: str = ""
-        self.offtargets_n: int = 0
-        self.offtargets_dict: dict = {}
+        self.off_targets_dict: dict = {}
 
     def __repr__(self) -> str:
         return f"Guide({self.guide_seq}|{self.guide_chrom}:{self.guide_start}-{self.guide_end}|{self.guide_strand}|)"
@@ -97,27 +93,24 @@ class Guide:
 
             sum_score = sum([p["pattern_score"] for p in sorted_mmej_patterns])
             oof_score = oof_sum / sum_score * 100
+
             self.mmej_patterns = sorted_mmej_patterns
             self.mmej_sum_score = sum_score
             self.mmej_oof_score = oof_score
 
-    def find_off_targets(
-        self, genome: Genome, **kwargs
-    ) -> tuple:
+    def find_off_targets(self, genome: Genome, **kwargs) -> None:
 
-        index_path = genome.bowtie_index
+        if genome:
+            index_path = genome.bowtie_index
+        else:
+            raise ValueError("No genome / locus specified.")
 
         if index_path:
-            guides_offtargets, targets, stdout = run_bowtie(
+            guides_offtargets = run_bowtie(
                 guides=[self], genome_index_path=index_path, **kwargs
             )
-            print(guides_offtargets)
-            # if len(guides_offtargets.items()) > 0:
-            #     for ix, g in guides_offtargets.items():
-            #         self.offtargets_str = g["offtargets_str"]
-            #         self.offtargets_n = g["offtargets_n"]
-            #         self.offtargets_dict = g["offtargets_dict"]
-            
-            return guides_offtargets, targets,stdout 
+
+            self.off_targets_dict = guides_offtargets[0]
+
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")
