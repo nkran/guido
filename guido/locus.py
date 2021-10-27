@@ -172,7 +172,6 @@ class Locus:
 
         # search for guides in each locus
         for locus_start, locus_end in loci_intervals:
-            print(locus_start, locus_end)
             if locus_start != self.start and locus_end != self.end:
                 locus_start -= self.start
                 locus_end -= self.start
@@ -270,15 +269,21 @@ def load_from_gene(genome: Genome, gene_name: str) -> Locus:
     if genome.annotation_file_abspath.exists():
         try:
             ann_db = _prepare_annotation(genome.annotation_file_abspath)
-            locus_annotation = ann_db.query(f'ID == @gene_name & Feature == "gene"')
-            chromosome = locus_annotation.Chromosome.values[0]
-            start = int(locus_annotation.Start)
-            end = int(locus_annotation.End)
+            gene_annotation = ann_db.query(f'ID == @gene_name & Feature == "gene"')
+            chromosome = gene_annotation.Chromosome.values[0]
+            start = int(gene_annotation.Start)
+            end = int(gene_annotation.End)
 
+            locus_annotation = ann_db.query(
+                f"(ID == @gene_name) & (Chromosome == @chromosome) &  \
+                  (((Start >= {start - 1}) & (Start <= {end + 1})) | \
+                  ((End >= {start - 1}) & (End <= {end + 1})))"
+            )
+            
             locus_sequence = Fasta(str(genome.genome_file_abspath)).get_seq(
                 chromosome, start, end
             )
-
+            
             return Locus(
                 genome=genome, sequence=locus_sequence, annotation=locus_annotation
             )
