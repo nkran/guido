@@ -1,6 +1,7 @@
 # Guido specific
 bin/
 tests
+gcs_cache_*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
