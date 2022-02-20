@@ -10,6 +10,11 @@ from guido.helpers import rev_comp
 # TODO assuming PAM has at least one arbitrary nucleotide
 
 
+def calculate_ot_sum_score(off_targets):
+    ot_mismatch_weights = [10, 5, 4, 3, 1]
+    return sum([ot_mismatch_weights[len(ot["mismatches"]) - 1] for ot in off_targets])
+
+
 def _parse_mismatches(mismatches: str, strand: str, seq_len: int):
     mm_split = mismatches.split(",")
     mm_dict = {}
