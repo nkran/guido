@@ -1,9 +1,8 @@
-from os import read
 import pickle
 import subprocess
-
 from pathlib import Path
 from typing import List, Optional, Union
+
 from pyfaidx import Faidx
 
 
@@ -42,6 +41,8 @@ class Genome:
                 raise ValueError(
                     f"Annotation file file {genome_file_abspath} does noth exist or is not in the right format."
                 )
+        else:
+            self.annotation_file_abspath = None
 
     @property
     def is_built(self) -> bool:

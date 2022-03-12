@@ -178,7 +178,7 @@ class Locus:
         # take default locus bounds
         self.intervals = [[self.start, self.end]]
 
-        if "all" not in selected_features:
+        if "all" not in selected_features and self.annotation:
             locus_annotation = self.annotation.query(
                 f"(Feature in @selected_features) & \
                 (Chromosome == @self.chromosome) &  \
@@ -513,15 +513,17 @@ Locus creation ------------------
 """
 
 
-def _prepare_annotation(annotation_file_abspath):
+def _prepare_annotation(annotation_file_abspath, as_df=True):
     if annotation_file_abspath.suffix in [".gff3", ".gff"]:
-        ann_db = pyranges.read_gff3(str(annotation_file_abspath), as_df=True)
-        ann_db.rename(columns={"Name": "Exon"}, inplace=True)
+        ann_db = pyranges.read_gff3(str(annotation_file_abspath), as_df=as_df)
+        if as_df:
+            ann_db =ann_db.rename(columns={"Name": "Exon"})  # type: ignore
     elif annotation_file_abspath.suffix in [".gtf"]:
-        ann_db = pyranges.read_gtf(str(annotation_file_abspath), as_df=True)
-        ann_db.rename(columns={"gene_id": "ID", "exon_number": "Exon"}, inplace=True)
+        ann_db = pyranges.read_gtf(str(annotation_file_abspath), as_df=as_df)
+        if as_df:
+            ann_db = ann_db.rename(columns={"gene_id": "ID", "exon_number": "Exon"})  # type: ignore
     else:
-        raise ValueError("Annotation file not recognised")  # TODO: fix message
+        raise ValueError("Annotation file not recognised. Annotation file needs to be GFF3 or GTF formnat.")
     return ann_db
 
 
@@ -552,14 +554,16 @@ def locus_from_coordinates(
         chromosome, start, end
     )
 
-    if genome.annotation_file_abspath.exists():
-        ann_db = _prepare_annotation(genome.annotation_file_abspath)
-        locus_annotation = ann_db.query(
-            f"(Chromosome == @chromosome) &  \
-                (((Start >= {start - 1}) & (Start <= {end + 1})) | \
-                ((End >= {start - 1}) & (End <= {end + 1})))"
-        )
-
+    if genome.annotation_file_abspath and genome.annotation_file_abspath.exists():
+        ann_db = _prepare_annotation(genome.annotation_file_abspath, as_df=False)
+        locus_annotation = ann_db.intersect(pyranges.PyRanges(chromosomes=[chromosome], starts=[start], ends=[end])).df
+        
+        if genome.annotation_file_abspath.suffix in [".gff3", ".gff"]:
+            locus_annotation = locus_annotation.rename(columns={"Name": "Exon"})  # type: ignore
+        elif genome.annotation_file_abspath.suffix in [".gtf"]:
+            locus_annotation = locus_annotation.rename(columns={"gene_id": "ID", "exon_number": "Exon"})  # type: ignore
+            
+        
         if len(locus_annotation) > 0:
             return Locus(
                 genome=genome, sequence=locus_sequence, annotation=locus_annotation
@@ -616,7 +620,7 @@ def locus_from_gene(genome: Genome, gene_name: str) -> Locus:
     """
     if genome.annotation_file_abspath.exists():
         try:
-            ann_db = _prepare_annotation(genome.annotation_file_abspath)
+            ann_db = _prepare_annotation(genome.annotation_file_abspath, as_df=True)
             gene_annotation = ann_db.query(f'ID == @gene_name & Feature == "gene"')
             chromosome = gene_annotation.Chromosome.values[0]
             start = int(gene_annotation.Start)
