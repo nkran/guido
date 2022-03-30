@@ -1,6 +1,7 @@
-import re
-import math
 import itertools
+import math
+import re
+
 import numpy as np
 
 
@@ -116,3 +117,6 @@ def generate_mmej_patterns(rel_cut_position, sequence, length_weight):
             mmej_patterns.append(pattern_dict)
 
         return mmej_patterns
+
+    else:
+        return None

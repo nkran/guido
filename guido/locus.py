@@ -15,14 +15,14 @@ from guido.genome import Genome
 class Locus:
     def __init__(
         self,
-        sequence: Union[Sequence, str],
-        name: str = None,
-        start: int = 1,
-        end: int = None,
-        genome: Genome = None,
-        annotation: pd.DataFrame = None,
+        sequence,
+        name=None,
+        start=1,
+        end=None,
+        genome=None,
+        annotation=None,
         **kwargs,
-    ) -> None:
+    ):
         """
         [summary]
 
@@ -68,26 +68,37 @@ class Locus:
                     self.sequence.seq
                 )  # TODO: test if length corresponds to given end
 
-    def __iter__(self):
-        return iterable(self.guides)
+    def guide(self, ix):
+        """
+        _summary_
 
-    # TODO: length of the locus
-    def __len__(self):
-        return self.end - self.start
+        Parameters
+        ----------
+        ix : _type_
+            _description_
 
-    @property
-    def lenght(self) -> int:
-        return self.end - self.start
+        Returns
+        -------
+        _type_
+            _description_
 
-    def guide(self, ix: Union[str, int]) -> Union[Guide,None]:
+        Raises
+        ------
+        ValueError
+            _description_
+        ValueError
+            _description_
+        """
         if isinstance(ix, str):
             for g in self.guides:
                 if g.id == ix:
                     return g
+            else:
+                raise ValueError("Provided gRNA index is not valid.")
         elif isinstance(ix, int):
             return self.guides[ix]
         else:
-            raise ValueError('Provided gRNA index is not valid.')
+            raise ValueError("Provided gRNA index is not valid.")
 
     def _flatten_intervals(self, intervals):
         fi = []
@@ -155,10 +166,10 @@ class Locus:
 
     def find_guides(
         self,
-        pam: str = "NGG",
-        min_flanking_length: int = 75,
-        selected_features: Set[str] = {"all"},
-    ) -> None:
+        pam="NGG",
+        min_flanking_length=75,
+        selected_features={"all"},
+    ):
         """
         [summary]
 
@@ -231,9 +242,7 @@ class Locus:
 
         self.guides = sorted_guides
 
-    def simulate_end_joining(
-        self, n_patterns: int = 5, length_weight: int = 20
-    ) -> None:
+    def simulate_end_joining(self, n_patterns=5, length_weight=20):
         """
         [summary]
 
@@ -255,9 +264,7 @@ class Locus:
         for G in self.guides:
             G.simulate_end_joining(n_patterns, length_weight)
 
-    def find_off_targets(
-        self, external_genome: Union[Genome, None] = None, **kwargs
-    ) -> None:
+    def find_off_targets(self, external_genome=None, **kwargs):
         """
         [summary]
 
@@ -298,7 +305,7 @@ class Locus:
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")
 
-    def _apply_clipped_layer_data(self, guides, layer_name, layer_data) -> None:
+    def _apply_clipped_layer_data(self, guides, layer_name, layer_data):
         """
         _summary_
 
@@ -329,7 +336,12 @@ class Locus:
         return self._layers
 
     def add_layer(
-        self, name: str, layer_data: np.ndarray, apply_to_guides: bool = True
+        self,
+        name,
+        layer_data,
+        layer_pos=None,
+        apply_to_guides=True,
+        is_variation=False,
     ):
         """
         _summary_
@@ -383,7 +395,7 @@ class Locus:
             layers.extend(g.layers.keys())
         return set(layers)
 
-    def _prepare_alt_matrix(self, rank_layer_names: list, method=np.mean) -> np.ndarray:
+    def _prepare_alt_matrix(self, rank_layer_names, method=np.mean):
         """
         [summary]
 
@@ -438,13 +450,13 @@ class Locus:
 
     def rank_guides(
         self,
-        rank_layer_names: list = None,
-        is_benefit_layer: list = None,
-        weight_vector: list = None,
-        ranking_method: str = "TOPSIS",
-        norm_method: str = "Vector",
+        layer_names=None,
+        layer_is_benefit=None,
+        weight_vector=None,
+        ranking_method="TOPSIS",
+        norm_method="Vector",
         **kwargs,
-    ) -> list:
+    ):
         """
         [summary]
 
@@ -527,9 +539,7 @@ def _prepare_annotation(annotation_file_abspath, as_df=True):
     return ann_db
 
 
-def locus_from_coordinates(
-    genome: Genome, chromosome: str, start: int, end: int
-) -> Locus:
+def locus_from_coordinates(genome, chromosome, start, end):
     """
     [summary]
 
@@ -556,14 +566,15 @@ def locus_from_coordinates(
 
     if genome.annotation_file_abspath and genome.annotation_file_abspath.exists():
         ann_db = _prepare_annotation(genome.annotation_file_abspath, as_df=False)
-        locus_annotation = ann_db.intersect(pyranges.PyRanges(chromosomes=[chromosome], starts=[start], ends=[end])).df
-        
+        locus_annotation = ann_db.intersect(
+            pyranges.PyRanges(chromosomes=[chromosome], starts=[start], ends=[end])
+        ).df
+
         if genome.annotation_file_abspath.suffix in [".gff3", ".gff"]:
             locus_annotation = locus_annotation.rename(columns={"Name": "Exon"})  # type: ignore
         elif genome.annotation_file_abspath.suffix in [".gtf"]:
             locus_annotation = locus_annotation.rename(columns={"gene_id": "ID", "exon_number": "Exon"})  # type: ignore
-            
-        
+
         if len(locus_annotation) > 0:
             return Locus(
                 genome=genome, sequence=locus_sequence, annotation=locus_annotation
@@ -576,7 +587,7 @@ def locus_from_coordinates(
         return Locus(genome=genome, sequence=locus_sequence, annotation=None)
 
 
-def locus_from_sequence(sequence: str, sequence_name: str = None) -> Locus:
+def locus_from_sequence(sequence, sequence_name=None):
     """
     [summary]
 
@@ -595,7 +606,7 @@ def locus_from_sequence(sequence: str, sequence_name: str = None) -> Locus:
     return Locus(sequence=sequence, name=sequence_name)
 
 
-def locus_from_gene(genome: Genome, gene_name: str) -> Locus:
+def locus_from_gene(genome, gene_name):
     """
     [summary]
 

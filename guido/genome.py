@@ -6,7 +6,22 @@ from typing import List, Optional, Union
 from pyfaidx import Faidx
 
 
-def check_file(filename: Union[Path, str], supported_ext: List[str]) -> bool:
+def check_file(filename, supported_ext):
+    """
+    _summary_
+
+    Parameters
+    ----------
+    filename : _type_
+        _description_
+    supported_ext : _type_
+        _description_
+
+    Returns
+    -------
+    bool
+        _description_
+    """
     filename = Path(filename)
     if filename.exists() and filename.suffix in supported_ext:
         return True
@@ -17,11 +32,29 @@ def check_file(filename: Union[Path, str], supported_ext: List[str]) -> bool:
 class Genome:
     def __init__(
         self,
-        genome_name: str,
-        genome_file_abspath: Optional[Union[Path, str]] = None,
-        annotation_file_abspath: Optional[Union[Path, str]] = None,
-    ) -> None:
+        genome_name,
+        genome_file_abspath=None,
+        annotation_file_abspath=None,
+    ):
+        """
+        _summary_
 
+        Parameters
+        ----------
+        genome_name : _type_
+            _description_
+        genome_file_abspath : _type_, optional
+            _description_, by default None
+        annotation_file_abspath : _type_, optional
+            _description_, by default None
+
+        Raises
+        ------
+        ValueError
+            _description_
+        ValueError
+            _description_
+        """
         self.genome_name = genome_name
         self._bowtie_ignore = False
         self.bowtie_index = None
@@ -45,7 +78,15 @@ class Genome:
             self.annotation_file_abspath = None
 
     @property
-    def is_built(self) -> bool:
+    def is_built(self):
+        """
+        _summary_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         ready = []
         if self.genome_file_abspath and self.fai_file:
             ready.append(True)
@@ -71,11 +112,25 @@ class Genome:
 
     def build(
         self,
-        n_threads: int = 1,
-        save_pickle: bool = True,
-        bowtie_ignore: bool = False,
-        bowtie_path: Optional[Union[Path, str]] = "",
-    ) -> None:
+        n_threads=1,
+        save_pickle=True,
+        bowtie_ignore=False,
+        bowtie_path="",
+    ):
+        """
+        _summary_
+
+        Parameters
+        ----------
+        n_threads : int, optional
+            _description_, by default 1
+        save_pickle : bool, optional
+            _description_, by default True
+        bowtie_ignore : bool, optional
+            _description_, by default False
+        bowtie_path : str, optional
+            _description_, by default ""
+        """
 
         self._bowtie_ignore = bowtie_ignore
         if self.annotation_file_abspath:
@@ -126,7 +181,26 @@ class Genome:
                 )
 
 
-def load_genome_from_file(guido_file: Union[Path, str]):
+def load_genome_from_file(guido_file):
+    """
+    _summary_
+
+    Parameters
+    ----------
+    guido_file : _type_
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+
+    Raises
+    ------
+    ValueError
+        _description_
+    """
+
     if Path(guido_file).exists():
         with open(guido_file, "rb") as f:
             guido_dict = pickle.load(f)

@@ -1,12 +1,10 @@
-import tempfile
 import subprocess
-
+import tempfile
 from pathlib import Path
 from typing import Union
 
 from guido.helpers import rev_comp
 
-# TODO typing
 # TODO assuming PAM has at least one arbitrary nucleotide
 
 
@@ -15,7 +13,7 @@ def calculate_ot_sum_score(off_targets):
     return sum([ot_mismatch_weights[len(ot["mismatches"]) - 1] for ot in off_targets])
 
 
-def _parse_mismatches(mismatches: str, strand: str, seq_len: int):
+def _parse_mismatches(mismatches, strand, seq_len):
     mm_split = mismatches.split(",")
     mm_dict = {}
     for m in mm_split:
@@ -29,22 +27,22 @@ def _parse_mismatches(mismatches: str, strand: str, seq_len: int):
     return mm_dict
 
 
-def _hit_is_valid(mismatches: dict, non_arbitrary_positions: list):
+def _hit_is_valid(mismatches, non_arbitrary_positions):
     return all(
         [False if pos in non_arbitrary_positions else True for pos in mismatches.keys()]
     )
 
 
 def run_bowtie(
-    guides: list,
-    pam: str = "NGG",
-    core_length: int = 10,
-    core_mismatches: int = 0,
-    total_mismatches: int = 4,
-    genome_index_path: Union[str, Path] = None,
-    threads: int = 1,
-    bowtie_path: str = "bin/bowtie/",
-) -> dict:
+    guides,
+    pam = "NGG",
+    core_length = 10,
+    core_mismatches = 0,
+    total_mismatches = 4,
+    genome_index_path = None,
+    threads = 1,
+    bowtie_path = "bin/bowtie/",
+):
 
     pam_mismatches = rev_comp(pam).count("N")
     pam_length = len(pam)

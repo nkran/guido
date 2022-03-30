@@ -1,20 +1,20 @@
-from guido.mmej import generate_mmej_patterns
-from guido.off_targets import run_bowtie, calculate_ot_sum_score
 from guido.genome import Genome
 from guido.helpers import rev_comp
+from guido.mmej import generate_mmej_patterns
+from guido.off_targets import calculate_ot_sum_score, run_bowtie
 
 
 class Guide:
     def __init__(
         self,
-        sequence: str,
-        pam_position: int,
-        pam_len: int,
-        strand: str = "+",
-        max_flanking_length: int = 75,
-        cut_offset: int = 3,
-        chromosome: str = "seq",
-        start: int = 0,
+        sequence,
+        pam_position,
+        pam_len,
+        strand="+",
+        max_flanking_length=75,
+        cut_offset=3,
+        chromosome="seq",
+        start=0,
     ) -> None:
 
         length = len(sequence)
@@ -45,29 +45,29 @@ class Guide:
             right_slice = length
 
         # Guide properties
-        self.locus_seq: str = sequence[slice(left_slice, right_slice)]
-        self.guide_seq: str = guide_seq
-        self.guide_pam: str = guide_seq[-pam_len:]
-        self.guide_chrom: str = chromosome
-        self.guide_start: int = absolute_guide_start
-        self.guide_end: int = absolute_guide_end
-        self.guide_strand: str = strand
-        self.relative_cut_pos: int = relative_cut_pos
-        self.absolute_cut_pos: int = absolute_cut_pos
-        self.rank_score: float = 0.0
-        self.rank: int = 0
-        self.id: str = ""
+        self.locus_seq = sequence[slice(left_slice, right_slice)]
+        self.guide_seq = guide_seq
+        self.guide_pam = guide_seq[-pam_len:]
+        self.guide_chrom = chromosome
+        self.guide_start = absolute_guide_start
+        self.guide_end = absolute_guide_end
+        self.guide_strand = strand
+        self.relative_cut_pos = relative_cut_pos
+        self.absolute_cut_pos = absolute_cut_pos
+        self.rank_score = 0.0
+        self.rank = 0
+        self.id = ""
 
         # MMEJ properties
-        self.mmej_patterns: list = []
+        self.mmej_patterns = []
 
         # Off-targets
-        self.off_targets: list = []
+        self.off_targets = []
 
         # Layers
-        self._layers: dict = {}
+        self._layers = {}
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         if self.id:
             name = self.id
         else:
@@ -75,12 +75,18 @@ class Guide:
         return f"{name}({self.guide_seq}|{self.guide_chrom}:{self.guide_start}-{self.guide_end}|{self.guide_strand}|)"
 
     @property
-    def location(self) -> str:
+    def location(self):
+        """
+        _summary_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         return f"{self.guide_chrom}:{self.guide_start}-{self.guide_end}"
 
-    def simulate_end_joining(
-        self, n_patterns: int = 5, length_weight: int = 20
-    ) -> None:
+    def simulate_end_joining(self, n_patterns: int = 5, length_weight: int = 20):
         """
         [summary]
 
@@ -155,9 +161,37 @@ class Guide:
         return self._layers
 
     def add_layer(self, name: str, layer_data: float):
+        """
+        _summary_
+
+        Parameters
+        ----------
+        name : str
+            _description_
+        layer_data : float
+            _description_
+        """
         self._layers[name] = layer_data
 
     def layer(self, key):
+        """
+        _summary_
+
+        Parameters
+        ----------
+        key : _type_
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+
+        Raises
+        ------
+        ValueError
+            _description_
+        """
         if key in self._layers.keys():
             return self._layers[key]
         else:
