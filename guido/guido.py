@@ -1,5 +1,3 @@
-from guido.locus import Locus
-
 """
 - check if N in flanks / guide sequence
 - remove partial gRNAs                                  done

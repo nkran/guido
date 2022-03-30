@@ -1,8 +1,9 @@
 import re
+
+import allel
 import mcdm
 import numpy as np
 import pyranges
-import allel
 from pyfaidx import Fasta, Sequence
 
 from guido.guides import Guide
@@ -64,7 +65,7 @@ class Locus:
                 self.end = self.start + len(
                     self.sequence.seq
                 )  # TODO: test if length corresponds to given end
-        
+
         if self.end:
             self.length = self.end - self.start
         else:
@@ -193,7 +194,7 @@ class Locus:
 
         if "all" not in selected_features and self.annotation:
             locus_annotation = self.annotation.query(
-                f"(Feature in @selected_features) & \
+                "(Feature in @selected_features) & \
                 (Chromosome == @self.chromosome) &  \
                 (((Start >= @self.start) & (Start <= @self.end)) | \
                 ((End >= @self.start) & (End <= @self.end)))"
@@ -352,7 +353,7 @@ class Locus:
                 region_ac = g[region_loc].count_alleles()
                 pi = allel.sequence_diversity(region_pos, region_ac)
                 regions_vals.append(pi)
-            except Exception as e:
+            except Exception:
                 regions_vals.append(0)
 
         return regions_vals
@@ -364,7 +365,7 @@ class Locus:
             try:
                 region_loc = pos.locate_range(r[0], r[1])
                 regions_vals.append(g[region_loc].count_alleles()[:, 1:].sum())
-            except Exception as e:
+            except Exception:
                 regions_vals.append(0)
 
         return regions_vals
@@ -376,7 +377,7 @@ class Locus:
             try:
                 region_loc = pos.locate_range(r[0], r[1])
                 regions_vals.append(g[region_loc].n_variants)
-            except Exception as e:
+            except Exception:
                 regions_vals.append(0)
 
         return regions_vals
@@ -742,7 +743,7 @@ def locus_from_gene(genome, gene_name):
     if genome.annotation_file_abspath.exists():
         try:
             ann_db = _prepare_annotation(genome.annotation_file_abspath, as_df=True)
-            gene_annotation = ann_db.query(f'ID == @gene_name & Feature == "gene"')
+            gene_annotation = ann_db.query('ID == @gene_name & Feature == "gene"')
             chromosome = gene_annotation.Chromosome.values[0]
             start = int(gene_annotation.Start)
             end = int(gene_annotation.End)

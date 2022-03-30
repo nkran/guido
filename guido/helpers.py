@@ -1,5 +1,6 @@
-import pandas as pd
 from shutil import which
+
+import pandas as pd
 
 
 def rev_comp(seq):

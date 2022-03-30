@@ -33,13 +33,13 @@ def _hit_is_valid(mismatches, non_arbitrary_positions):
 
 def run_bowtie(
     guides,
-    pam = "NGG",
-    core_length = 10,
-    core_mismatches = 0,
-    total_mismatches = 4,
-    genome_index_path = None,
-    threads = 1,
-    bowtie_path = "bin/bowtie/",
+    pam="NGG",
+    core_length=10,
+    core_mismatches=0,
+    total_mismatches=4,
+    genome_index_path=None,
+    threads=1,
+    bowtie_path="bin/bowtie/",
 ):
 
     pam_mismatches = rev_comp(pam).count("N")
