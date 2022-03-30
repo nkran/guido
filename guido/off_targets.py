@@ -1,7 +1,5 @@
 import subprocess
 import tempfile
-from pathlib import Path
-from typing import Union
 
 from guido.helpers import rev_comp
 

@@ -5,15 +5,7 @@ from guido.locus import Locus
 - remove partial gRNAs                                  done
 - refactor load_from_coordinates() return
 - multithreading
-- create Genome from FASTA file
+- create Genome from FASTA file                         done
 - refactor guide.find_off_targets()                     done
 - check if bowtie is installed
 """
-
-
-def main():
-
-    seq = "GCCGACCCATTCTGCTGCCCTTCTGTACCGTGGTGCGGCTCTCTCGCTCCACTCCTTAAACACTAGTTTGAACTTATCGGCATCAGTTGCGCACGCGGCTTGATTTAAAATAGCACAGAACTATTGAATTCGTTTCACCAAacacacatacacacacccacatacaAAGATACGGACAGTTACAGTGGTGCGGAAAGTTTATCATCCACTCTGACGGGTGGTATTGCGCAACTCCACGCCATCAAACATGTTCAGATTATGCAATCGTGAGTATTCGTTGACCACCGCTTGACCTGTGTTAAACATAAATGAATGGAAAGGTAAGGCTTTGAAGGTCACTGCTGCTGGCTGACGGAATTCACAAtttggtttttgatgttttggttttttttttGTATCGAATTTTGAAGTCAGTGAACGTGGCATAACACCATATGCCGCTACCTTCAAGATGCAGATACTCCTAACTTCTCGTGTCTGAGCTAGCTAA"
-    locus = Locus(sequence=seq)
-
-    locus.find_guides("NGG")

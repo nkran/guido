@@ -103,23 +103,27 @@ class Guide:
                 self.relative_cut_pos, self.locus_seq, length_weight
             )
 
-            sorted_mmej_patterns = sorted(
-                mmej_patterns, key=lambda x: -x["pattern_score"]
-            )[:n_patterns]
+            if mmej_patterns:
+                sorted_mmej_patterns = sorted(
+                    mmej_patterns, key=lambda x: -x["pattern_score"]
+                )[:n_patterns]
 
-            oof_sum = sum(
-                [
-                    p["pattern_score"]
-                    for p in sorted_mmej_patterns
-                    if p["frame_shift"] == "+"
-                ]
-            )
+                oof_sum = sum(
+                    [
+                        p["pattern_score"]
+                        for p in sorted_mmej_patterns
+                        if p["frame_shift"] == "+"
+                    ]
+                )
 
-            sum_score = sum([p["pattern_score"] for p in sorted_mmej_patterns])
-            oof_score = oof_sum / sum_score * 100
+                sum_score = sum([p["pattern_score"] for p in sorted_mmej_patterns])
+                oof_score = oof_sum / sum_score * 100
+            else:
+                sorted_mmej_patterns = None
+                sum_score = None
+                oof_score = None
 
             self.mmej_patterns = sorted_mmej_patterns
-
             self.add_layer("mmej_sum_score", sum_score)
             self.add_layer("mmej_oof_score", oof_score)
 

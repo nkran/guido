@@ -1,15 +1,12 @@
 import re
-import numpy as np
-import pandas as pd
-import pyranges
 import mcdm
+import numpy as np
+import pyranges
+import allel
+from pyfaidx import Fasta, Sequence
 
-from typing import Union, Set
-from pyfaidx import Sequence, Fasta
-
-from guido.off_targets import run_bowtie, calculate_ot_sum_score
 from guido.guides import Guide
-from guido.genome import Genome
+from guido.off_targets import calculate_ot_sum_score, run_bowtie
 
 
 class Locus:
@@ -61,12 +58,17 @@ class Locus:
             self.sequence = Sequence(
                 seq=sequence, start=start, end=end, name=name, **kwargs
             )
-            if end:
+            if end and isinstance(int, end):
                 self.end = end
-            else:
+            elif not end:
                 self.end = self.start + len(
                     self.sequence.seq
                 )  # TODO: test if length corresponds to given end
+        
+        if self.end:
+            self.length = self.end - self.start
+        else:
+            self.length = len(self.sequence)
 
     def guide(self, ix):
         """
@@ -323,6 +325,101 @@ class Locus:
                 ix = g.guide_start - self.start
                 g.add_layer(layer_name, layer_data[ix : ix + 23])
 
+    # TODO: move to util functions
+    def _get_guide_regions(self, guide):
+        if guide.guide_strand == "-":
+            pam_pos = (guide.guide_start, guide.guide_start + 1)
+            seed_pos = (guide.guide_start + 3, guide.guide_start + 13)
+            seed_small_pos = (guide.guide_start + 3, guide.guide_start + 7)
+        else:
+            pam_pos = (guide.guide_end - 1, guide.guide_end)
+            seed_pos = (guide.guide_end - 13, guide.guide_end - 3)
+            seed_small_pos = (guide.guide_end - 7, guide.guide_end - 3)
+
+        guide_pos = (guide.guide_start, guide.guide_end)
+        guide_regions = [pam_pos, seed_small_pos, seed_pos, guide_pos]
+
+        return guide_regions
+
+    # TODO: move to util functions
+    def _guide_sequence_diversity(self, guide, g, pos):
+        guide_regions = self._get_guide_regions(guide)
+        regions_vals = []
+        for r in guide_regions:
+            try:
+                region_loc = pos.locate_range(r[0], r[1])
+                region_pos = pos[region_loc]
+                region_ac = g[region_loc].count_alleles()
+                pi = allel.sequence_diversity(region_pos, region_ac)
+                regions_vals.append(pi)
+            except Exception as e:
+                regions_vals.append(0)
+
+        return regions_vals
+
+    def _guide_alt_ac(self, guide, g, pos):
+        guide_regions = self._get_guide_regions(guide)
+        regions_vals = []
+        for r in guide_regions:
+            try:
+                region_loc = pos.locate_range(r[0], r[1])
+                regions_vals.append(g[region_loc].count_alleles()[:, 1:].sum())
+            except Exception as e:
+                regions_vals.append(0)
+
+        return regions_vals
+
+    def _guide_n_variants(self, guide, g, pos):
+        guide_regions = self._get_guide_regions(guide)
+        regions_vals = []
+        for r in guide_regions:
+            try:
+                region_loc = pos.locate_range(r[0], r[1])
+                regions_vals.append(g[region_loc].n_variants)
+            except Exception as e:
+                regions_vals.append(0)
+
+        return regions_vals
+
+    def _apply_variation_layer_data(
+        self, guides, layer_name, layer_genotype_data, layer_pos
+    ):
+        """
+        _summary_
+
+        Parameters
+        ----------
+        guides : _type_
+            _description_
+        layer_name : _type_
+            _description_
+        layer_data : _type_
+            _description_
+        """
+        guide_regions = ["pam", "seed", "small_seed", "guide"]
+
+        if len(guides) > 0:
+            for g in self.guides:
+                guide_sequence_diversity = self._guide_sequence_diversity(
+                    g, layer_genotype_data, layer_pos
+                )
+                guide_alt_ac = self._guide_alt_ac(g, layer_genotype_data, layer_pos)
+                guide_n_variants = self._guide_n_variants(
+                    g, layer_genotype_data, layer_pos
+                )
+                for i in range(len(guide_regions)):
+                    g.add_layer(
+                        f"var_{layer_name}_{guide_regions[i]}_pi",
+                        guide_sequence_diversity[i],
+                    )
+                    g.add_layer(
+                        f"var_{layer_name}_{guide_regions[i]}_alt_ac", guide_alt_ac[i]
+                    )
+                    g.add_layer(
+                        f"var_{layer_name}_{guide_regions[i]}_variants",
+                        guide_n_variants[i],
+                    )
+
     @property
     def layers(self):
         """
@@ -362,18 +459,25 @@ class Locus:
         ValueError
             _description_
         """
-        if layer_data.shape[0] == self.lenght:
-            self._layers[name] = layer_data
+        self._layers[name] = layer_data
 
-            if apply_to_guides:
-                if len(self.guides) > 0:
-                    self._apply_clipped_layer_data(self.guides, name, layer_data)
+        if apply_to_guides:
+            if len(self.guides) > 0:
+                if is_variation and layer_pos:
+                    self._apply_variation_layer_data(
+                        self.guides, name, layer_data, layer_pos
+                    )
                 else:
-                    raise ValueError("No guides to apply the data to.")
+                    if layer_data.shape[0] == self.length:
+                        self._apply_clipped_layer_data(self.guides, name, layer_data)
+                    else:
+                        raise ValueError("Layer and locus not the same lenght.")
         else:
-            raise ValueError("Layer and locus not the same lenght.")
+            raise ValueError("No guides to apply the data to.")
 
-    def layer(self, key: str) -> np.ndarray:
+    # TODO: remove layer method
+
+    def layer(self, key):
         """
         _summary_
 
@@ -471,11 +575,14 @@ class Locus:
             [description]
         ValueError
             [description]
+
+        TODO: - How do I handle instances where a layer exists only on some guides?
+              - nan vs 0 when no data on var layers
         """
 
         if len(self.guides) == 0:
             raise ValueError(
-                f"No gRNAs to rank. Try running `find_guides()` method first."
+                "No gRNAs to rank. Try running `find_guides()` method first."
             )
 
         # get layer names registered on individual guides
@@ -492,7 +599,7 @@ class Locus:
         )
 
         # check if requested layer exists on guides or on locus
-        if rank_layer_names:
+        if layer_names:
             for layer in guide_layer_names:
                 if layer not in self._layers.keys() and layer not in guide_layer_names:
                     print(self._layers.keys(), guide_layer_names)
@@ -500,23 +607,24 @@ class Locus:
                         f"Layer {layer} is not added to `Locus` or `Guide`."
                     )
         else:
-            rank_layer_names = list(guide_layer_names) + list(self._layers.keys())
+            layer_names = list(guide_layer_names) + list(self._layers.keys())
 
-        x_matrix = self._prepare_alt_matrix(rank_layer_names=rank_layer_names)
+        x_matrix = self._prepare_alt_matrix(rank_layer_names=layer_names)
         rank_scores = mcdm.rank(
             x_matrix,
             n_method=norm_method,
             w_vector=weight_vector,
-            is_benefit_x=is_benefit_layer,
+            is_benefit_x=layer_is_benefit,
             s_method=ranking_method,
             alt_names=[g.id for g in self.guides],
-            **kwargs,
         )
+
+        rank_asc = np.argsort([-r[1] for r in rank_scores])
 
         for i, (g_id, rank_score) in enumerate(rank_scores):
             self.guide(g_id).rank_score = rank_score
-            self.guide(g_id).rank = i+1
-        
+            self.guide(g_id).rank = rank_asc[i] + 1
+
         return rank_scores
 
 
@@ -529,13 +637,15 @@ def _prepare_annotation(annotation_file_abspath, as_df=True):
     if annotation_file_abspath.suffix in [".gff3", ".gff"]:
         ann_db = pyranges.read_gff3(str(annotation_file_abspath), as_df=as_df)
         if as_df:
-            ann_db =ann_db.rename(columns={"Name": "Exon"})  # type: ignore
+            ann_db = ann_db.rename(columns={"Name": "Exon"})  # type: ignore
     elif annotation_file_abspath.suffix in [".gtf"]:
         ann_db = pyranges.read_gtf(str(annotation_file_abspath), as_df=as_df)
         if as_df:
             ann_db = ann_db.rename(columns={"gene_id": "ID", "exon_number": "Exon"})  # type: ignore
     else:
-        raise ValueError("Annotation file not recognised. Annotation file needs to be GFF3 or GTF formnat.")
+        raise ValueError(
+            "Annotation file not recognised. Annotation file needs to be GFF3 or GTF formnat."
+        )
     return ann_db
 
 
