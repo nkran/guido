@@ -1,4 +1,3 @@
-from guido.genome import Genome
 from guido.helpers import rev_comp
 from guido.mmej import generate_mmej_patterns
 from guido.off_targets import calculate_ot_sum_score, run_bowtie
@@ -76,8 +75,7 @@ class Guide:
 
     @property
     def location(self):
-        """
-        _summary_
+        """_summary_
 
         Returns
         -------
@@ -86,9 +84,11 @@ class Guide:
         """
         return f"{self.guide_chrom}:{self.guide_start}-{self.guide_end}"
 
-    def simulate_end_joining(self, n_patterns: int = 5, length_weight: int = 20):
-        """
-        [summary]
+    def _create_mmej_oof_string(self, mmej_patterns):
+        return "|".join([p["frame_shift"] for p in mmej_patterns])
+
+    def simulate_end_joining(self, n_patterns=5, length_weight=20):
+        """[summary]
 
         Parameters
         ----------
@@ -124,12 +124,13 @@ class Guide:
                 oof_score = None
 
             self.mmej_patterns = sorted_mmej_patterns
+            self.mmej_str = self._create_mmej_oof_string(sorted_mmej_patterns)
+
             self.add_layer("mmej_sum_score", sum_score)
             self.add_layer("mmej_oof_score", oof_score)
 
-    def find_off_targets(self, genome: Genome, **kwargs) -> None:
-        """
-        [summary]
+    def find_off_targets(self, genome, **kwargs) -> None:
+        """[summary]
 
         Parameters
         ----------
@@ -165,8 +166,7 @@ class Guide:
         return self._layers
 
     def add_layer(self, name: str, layer_data: float):
-        """
-        _summary_
+        """_summary_
 
         Parameters
         ----------
@@ -178,8 +178,7 @@ class Guide:
         self._layers[name] = layer_data
 
     def layer(self, key):
-        """
-        _summary_
+        """_summary_
 
         Parameters
         ----------
