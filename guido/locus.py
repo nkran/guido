@@ -21,23 +21,42 @@ class Locus:
         annotation=None,
         **kwargs,
     ):
-        """
-        [summary]
+        """Locus object that represents a genomic locus in which gRNAs are
+        searched.
 
         Parameters
         ----------
-        sequence : Union[Sequence, str]
-            [description]
+        sequence : Sequence, str
+            Nucleotide sequence. Can be defined as `pyfaidx.Sequence` or `str`.
         name : str, optional
-            [description], by default None
+            Name of the sequence, contig or chromosome, by default None.
         start : int, optional
-            [description], by default 1
+            Starting position of the locus. It should be 1-based. By default 1.
         end : int, optional
-            [description], by default None
+            Ending position of the locus.
         genome : Genome, optional
-            [description], by default None
+            Genome object that also includes the genomic locus defined here. It is
+            used by default to search for gRNA off-targets.
         annotation : pd.DataFrame, optional
-            [description], by default None
+            Annotation table that provides genomic features and is used to annotate
+            gRNAs that are found in the locus.
+
+        Examples
+        ----------
+
+        ```
+        >>> import guido
+        >>> seq = "TTATCATCCACTCTGACGGGTGGTATTGCGCAACTCCACGCCATCAAACATGTTCAGATTATGCAATCGTGAGTATTCGTTGACCACCGCTTGACCTGTGT"
+        >>> l = guido.Locus(
+        ...     sequence=seq, name="AgamP4_2R", start=48714554, end=48714654
+        ... )
+        >>> l.find_guides()
+        >>> l.guides
+        [gRNA-1(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714584|-|),
+         gRNA-2(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714577|+|),
+         gRNA-3(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714612|-|),
+         gRNA-4(CATAATCTGAACATGTTTGATGG|AgamP4_2R:48714594-48714617|-|)]
+        ```
         """
 
         self.sequence = sequence
@@ -59,7 +78,7 @@ class Locus:
             self.sequence = Sequence(
                 seq=sequence, start=start, end=end, name=name, **kwargs
             )
-            if end and isinstance(int, end):
+            if end and isinstance(end, int):
                 self.end = end
             elif not end:
                 self.end = self.start + len(
@@ -72,26 +91,34 @@ class Locus:
             self.length = len(self.sequence)
 
     def guide(self, ix):
-        """
-        _summary_
+        """Fetch a guide from the locus by it's index or name.
 
         Parameters
         ----------
-        ix : _type_
-            _description_
+        ix : str or int
+            Index of the gRNA.
 
         Returns
         -------
-        _type_
-            _description_
+        g: Guide
+            Guide object representing a gRNA
 
-        Raises
-        ------
-        ValueError
-            _description_
-        ValueError
-            _description_
+        Example
+        -------
+        ```
+        >>> import guido
+        >>> seq = "TTATCATCCACTCTGACGGGTGGTATTGCGCAACTCCACGCCATCAAACATGTTCAGATTATGCAATCGTGAGTATTCGTTGACCACCGCTTGACCTGTGT"
+        >>> l = guido.Locus(
+        ...     sequence=seq, name="AgamP4_2R", start=48714554, end=48714654
+        ... )
+        >>> l.find_guides()
+        >>> l.guide("gRNA-1")
+        gRNA-1(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714584|-|)
+        >>> l.guide(0)
+        gRNA-1(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714584|-|)
+        ```
         """
+
         if isinstance(ix, str):
             for g in self.guides:
                 if g.id == ix:
@@ -104,6 +131,7 @@ class Locus:
             raise ValueError("Provided gRNA index is not valid.")
 
     def _flatten_intervals(self, intervals):
+        """Flattens overlapping intervals into an union."""
         fi = []
         for start, end in intervals:
             if fi and fi[-1][1] >= start - 1:
@@ -117,7 +145,7 @@ class Locus:
         return fi
 
     def _find_guides_in_interval(self, sequence, start, pam):
-
+        """Finds guides in interval."""
         iupac_dict = {
             "A": ("A", "T"),
             "C": ("C", "G"),
@@ -170,20 +198,22 @@ class Locus:
     def find_guides(
         self,
         pam="NGG",
-        min_flanking_length=75,
+        min_flanking_length=0,
         selected_features={"all"},
     ):
-        """
-        [summary]
+        """Find gRNAs in the locus.
 
         Parameters
         ----------
         pam : str, optional
-            [description], by default "NGG"
+            gRNA PAM sequence, by default "NGG"
         min_flanking_length : int, optional
-            [description], by default 75
-        selected_features : Set[str], optional
-            [description], by default {"all"}
+            Defines flanking region from the locus where gRNAs are ignored. By default
+            0, however `simulate_end_joining()` requires flanking region of 75 bp to
+            simulate MMEJ.
+        selected_features : str, optional
+            Limit gRNA search on only specified genomic features. Features are defined
+            in the provided genome annotation file. By default {"all"}
         """
 
         # save searched PAM
@@ -245,22 +275,20 @@ class Locus:
 
         self.guides = sorted_guides
 
+        return sorted_guides
+
     def simulate_end_joining(self, n_patterns=5, length_weight=20):
-        """
-        [summary]
+        """Simulate end-joining and find MMEJ deletion patterns for each gRNA.
 
         Parameters
         ----------
         n_patterns : int, optional
-            [description], by default 5
+            Number of top scored MMEJ deletion patterns reported. By default 5.
         length_weight : int, optional
-            [description], by default 20
-
-        Raises
-        ------
-        ValueError
-            [description]
+            Length weight parameter used in MMEJ scoring as defined by Bae et al. 2015.
+            By default 20.
         """
+
         if len(self.guides) == 0:
             raise ValueError("No gRNAs saved yet.")
 
@@ -268,25 +296,14 @@ class Locus:
             G.simulate_end_joining(n_patterns, length_weight)
 
     def find_off_targets(self, external_genome=None, **kwargs):
-        """
-        [summary]
+        """Find off-targets in the genome for each gRNA.
 
         Parameters
         ----------
-        external_genome : Union[Genome, None], optional
-            [description], by default None
-
-        Raises
-        ------
-        ValueError
-            [description]
-        ValueError
-            [description]
-        ValueError
-            [description]
+        external_genome : Genome, optional
+            If provided, off-target search is performed in the external genome rather
+            than in the genome which Locus is a part of. By default None.
         """
-        if len(self.guides) == 0:
-            raise ValueError("No gRNAs saved yet.")
 
         if external_genome:
             index_path = external_genome.bowtie_index
@@ -308,19 +325,10 @@ class Locus:
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")
 
-    def _apply_clipped_layer_data(self, guides, layer_name, layer_data):
-        """
-        _summary_
+        return guides_bowtie_offtargets
 
-        Parameters
-        ----------
-        guides : _type_
-            _description_
-        layer_name : _type_
-            _description_
-        layer_data : _type_
-            _description_
-        """
+    def _apply_clipped_layer_data(self, guides, layer_name, layer_data):
+        """_summary_"""
         if len(guides) > 0:
             for g in self.guides:
                 ix = g.guide_start - self.start
@@ -385,18 +393,7 @@ class Locus:
     def _apply_variation_layer_data(
         self, guides, layer_name, layer_genotype_data, layer_pos
     ):
-        """
-        _summary_
-
-        Parameters
-        ----------
-        guides : _type_
-            _description_
-        layer_name : _type_
-            _description_
-        layer_data : _type_
-            _description_
-        """
+        """_summary_"""
         guide_regions = ["pam", "seed", "small_seed", "guide"]
 
         if len(guides) > 0:
@@ -423,8 +420,7 @@ class Locus:
 
     @property
     def layers(self):
-        """
-        _summary_
+        """_summary_
 
         Returns
         -------
@@ -441,24 +437,25 @@ class Locus:
         apply_to_guides=True,
         is_variation=False,
     ):
-        """
-        _summary_
+        """Adds a layer with the data to the locus.
+
+        TODO: add examples
 
         Parameters
         ----------
         name : str
-            _description_
+            Name of the layer
         layer_data : np.ndarray
-            _description_
+            Layer data. Needs to be the same shape as the locus.
         apply_to_guides : bool, optional
-            _description_, by default True
+            Apply layer data to gRNAs when adding it to the locus. By default True.
 
         Raises
         ------
         ValueError
-            _description_
+            Layer data and locus are not the same size
         ValueError
-            _description_
+            No gRNAs in the locus to apply the data to.
         """
         self._layers[name] = layer_data
 
@@ -476,24 +473,6 @@ class Locus:
         else:
             raise ValueError("No guides to apply the data to.")
 
-    # TODO: remove layer method
-
-    def layer(self, key):
-        """
-        _summary_
-
-        Parameters
-        ----------
-        key : _type_
-            _description_
-
-        Returns
-        -------
-        _type_
-            _description_
-        """
-        return self._layers[key]
-
     def _guide_layers(self):
         layers = []
         for g in self.guides:
@@ -501,8 +480,8 @@ class Locus:
         return set(layers)
 
     def _prepare_alt_matrix(self, rank_layer_names, method=np.mean):
-        """
-        [summary]
+        """Prepares numerical matrix with the gRNA layer data to be used later
+        in the ranking.
 
         Parameters
         ----------
@@ -560,10 +539,8 @@ class Locus:
         weight_vector=None,
         ranking_method="TOPSIS",
         norm_method="Vector",
-        **kwargs,
     ):
-        """
-        [summary]
+        """[summary]
 
         Returns
         -------
@@ -651,8 +628,7 @@ def _prepare_annotation(annotation_file_abspath, as_df=True):
 
 
 def locus_from_coordinates(genome, chromosome, start, end):
-    """
-    [summary]
+    """[summary]
 
     Parameters
     ----------
@@ -699,8 +675,7 @@ def locus_from_coordinates(genome, chromosome, start, end):
 
 
 def locus_from_sequence(sequence, sequence_name=None):
-    """
-    [summary]
+    """[summary]
 
     Parameters
     ----------
@@ -718,8 +693,7 @@ def locus_from_sequence(sequence, sequence_name=None):
 
 
 def locus_from_gene(genome, gene_name):
-    """
-    [summary]
+    """[summary]
 
     Parameters
     ----------

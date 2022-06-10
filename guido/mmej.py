@@ -6,10 +6,8 @@ import numpy as np
 
 
 def generate_mmej_patterns(rel_cut_position, sequence, length_weight):
-    """
-    Start with predefined k-mer length and extend it until it finds more
-    than one match in sequence.
-    """
+    """Start with predefined k-mer length and extend it until it finds more
+    than one match in sequence."""
 
     # split the sequence at the cut site
     left_seq = sequence[:rel_cut_position]

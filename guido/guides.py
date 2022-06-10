@@ -14,7 +14,7 @@ class Guide:
         cut_offset=3,
         chromosome="seq",
         start=0,
-    ) -> None:
+    ):
 
         length = len(sequence)
         cut_pos = pam_position - cut_offset
@@ -129,7 +129,7 @@ class Guide:
             self.add_layer("mmej_sum_score", sum_score)
             self.add_layer("mmej_oof_score", oof_score)
 
-    def find_off_targets(self, genome, **kwargs) -> None:
+    def find_off_targets(self, genome, **kwargs):
         """[summary]
 
         Parameters

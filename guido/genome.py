@@ -6,8 +6,7 @@ from pyfaidx import Faidx
 
 
 def check_file(filename, supported_ext):
-    """
-    _summary_
+    """_summary_
 
     Parameters
     ----------
@@ -35,8 +34,7 @@ class Genome:
         genome_file_abspath=None,
         annotation_file_abspath=None,
     ):
-        """
-        _summary_
+        """_summary_
 
         Parameters
         ----------
@@ -78,8 +76,7 @@ class Genome:
 
     @property
     def is_built(self):
-        """
-        _summary_
+        """_summary_
 
         Returns
         -------
@@ -116,8 +113,7 @@ class Genome:
         bowtie_ignore=False,
         bowtie_path="",
     ):
-        """
-        _summary_
+        """_summary_
 
         Parameters
         ----------
@@ -181,8 +177,7 @@ class Genome:
 
 
 def load_genome_from_file(guido_file):
-    """
-    _summary_
+    """_summary_
 
     Parameters
     ----------
