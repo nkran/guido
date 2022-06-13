@@ -7,6 +7,7 @@ import pyranges
 from pyfaidx import Fasta, Sequence
 
 from guido.guides import Guide
+from guido.helpers import _guides_to_csv, _guides_to_dataframe
 from guido.off_targets import calculate_ot_sum_score, run_bowtie
 
 
@@ -512,10 +513,10 @@ class Locus:
                     and layer_name in self.layers.keys()
                 ):
                     self._apply_clipped_layer_data(
-                        [g], layer_name=layer_name, layer_data=self.layer(layer_name)
+                        [g], layer_name=layer_name, layer_data=self._layers[layer_name]
                     )
 
-                layer_data = g.layer(layer_name)
+                layer_data = g._layers[layer_name]
 
                 if (
                     isinstance(layer_data, np.ndarray)
@@ -604,6 +605,19 @@ class Locus:
             self.guide(g_id).rank = rank_asc[i] + 1
 
         return rank_scores
+
+
+def guides_to_dataframe(self):
+    """Returns gRNAs in Pandas dataframe."""
+    return _guides_to_dataframe(self.guides)
+
+
+def guides_to_csv(self, filename):
+    """Save gRNAs in CSV file."""
+    if filename:
+        return _guides_to_csv(self.guides, filename)
+    else:
+        raise ValueError("Filename required to save CSV with gRNAs.")
 
 
 """

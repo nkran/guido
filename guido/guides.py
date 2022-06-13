@@ -165,7 +165,7 @@ class Guide:
     def layers(self):
         return self._layers
 
-    def add_layer(self, name: str, layer_data: float):
+    def add_layer(self, name, layer_data):
         """_summary_
 
         Parameters

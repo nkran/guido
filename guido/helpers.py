@@ -17,7 +17,7 @@ def is_tool(name):
     return which(name) is not None
 
 
-def guides_to_dataframe(guides):
+def _guides_to_dataframe(guides):
     guides_ext = []
     for g in guides:
         g = g.__dict__
@@ -31,8 +31,8 @@ def guides_to_dataframe(guides):
     return pd.DataFrame(guides_ext)
 
 
-def guides_to_csv(guides, file):
-    guides_df = guides_to_dataframe(guides).drop(
+def _guides_to_csv(guides, file):
+    guides_df = _guides_to_dataframe(guides).drop(
         ["mmej_patterns", "off_targets", "_layers"]
     )
     guides_df.to_csv(file)
