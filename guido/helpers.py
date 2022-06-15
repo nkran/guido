@@ -38,3 +38,11 @@ def _guides_to_csv(guides, file):
     guides_df.to_csv(file)
 
     return None
+
+
+def _guides_to_bed(guides, file):
+    guides_df = _guides_to_dataframe(guides).loc[
+        :, ["guide_chrom", "guide_start", "guide_end", "id", "rank", "guide_strand"]
+    ]
+    guides_df.to_csv(file, sep="\t", header=False, index=False)
+    return None

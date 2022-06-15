@@ -7,7 +7,7 @@ import pyranges
 from pyfaidx import Fasta, Sequence
 
 from guido.guides import Guide
-from guido.helpers import _guides_to_csv, _guides_to_dataframe
+from guido.helpers import _guides_to_bed, _guides_to_csv, _guides_to_dataframe
 from guido.off_targets import calculate_ot_sum_score, run_bowtie
 
 
@@ -280,6 +280,9 @@ class Locus:
 
     def simulate_end_joining(self, n_patterns=5, length_weight=20):
         """Simulate end-joining and find MMEJ deletion patterns for each gRNA.
+
+        Microhomology scores are calculated based on proposed scoring model descibed by
+        Bae et al. 2014.
 
         Parameters
         ----------
@@ -606,18 +609,23 @@ class Locus:
 
         return rank_scores
 
+    def guides_to_dataframe(self):
+        """Returns gRNAs in Pandas dataframe."""
+        return _guides_to_dataframe(self.guides)
 
-def guides_to_dataframe(self):
-    """Returns gRNAs in Pandas dataframe."""
-    return _guides_to_dataframe(self.guides)
+    def guides_to_csv(self, filename):
+        """Save gRNAs in CSV file."""
+        if filename:
+            return _guides_to_csv(self.guides, filename)
+        else:
+            raise ValueError("Filename required to save CSV with gRNAs.")
 
-
-def guides_to_csv(self, filename):
-    """Save gRNAs in CSV file."""
-    if filename:
-        return _guides_to_csv(self.guides, filename)
-    else:
-        raise ValueError("Filename required to save CSV with gRNAs.")
+    def guides_to_bed(self, filename):
+        """Save gRNAs in BED file."""
+        if filename:
+            return _guides_to_bed(self.guides, filename)
+        else:
+            raise ValueError("Filename required to save BED with gRNAs.")
 
 
 """
