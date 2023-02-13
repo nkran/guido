@@ -3,12 +3,13 @@ import re
 import allel
 import mcdm
 import numpy as np
+import pandas as pd
 import pyranges
 from pyfaidx import Fasta, Sequence
 
-from guido.guides import Guide
-from guido.helpers import _guides_to_bed, _guides_to_csv, _guides_to_dataframe
-from guido.off_targets import calculate_ot_sum_score, run_bowtie
+from .guides import Guide
+from .helpers import _guides_to_bed, _guides_to_csv, _guides_to_dataframe
+from .off_targets import calculate_ot_sum_score, run_bowtie
 
 
 class Locus:
@@ -82,14 +83,9 @@ class Locus:
             if end and isinstance(end, int):
                 self.end = end
             elif not end:
-                self.end = self.start + len(
-                    self.sequence.seq
-                )  # TODO: test if length corresponds to given end
+                self.end = self.start + len(self.sequence.seq)
 
-        if self.end:
-            self.length = self.end - self.start
-        else:
-            self.length = len(self.sequence)
+        self.length = len(self.sequence)
 
     def guide(self, ix):
         """Fetch a guide from the locus by it's index or name.
@@ -194,7 +190,11 @@ class Locus:
             )
             for pam_position in pams_rv
         ]
-        return guides_fw + guides_rv
+
+        guides = [
+            guide for guide in guides_fw + guides_rv if "N" not in guide.guide_seq
+        ]
+        return guides
 
     def find_guides(
         self,
@@ -220,13 +220,16 @@ class Locus:
         # save searched PAM
         self.pam = pam
 
+        # reset back to empty
+        self.guides = []
+
         # take default locus bounds
         self.intervals = [[self.start, self.end]]
 
-        if "all" not in selected_features and self.annotation:
+        if "all" not in selected_features and isinstance(self.annotation, pd.DataFrame):
             locus_annotation = self.annotation.query(
-                "(Feature in @selected_features) & \
-                (Chromosome == @self.chromosome) &  \
+                "(Feature == @selected_features) & \
+                (Chromosome == @self.chromosome) & \
                 (((Start >= @self.start) & (Start <= @self.end)) | \
                 ((End >= @self.start) & (End <= @self.end)))"
             ).sort_values("Start")
@@ -259,19 +262,20 @@ class Locus:
             )
 
             # dont add shorter sequences, check that cut position is in the interval
-            locus_guides = [
-                g
-                for g in locus_guides
-                if len(g.guide_seq) == 23
-                and g.absolute_cut_pos >= interval_start
-                and g.absolute_cut_pos <= interval_end
-            ]
+            locus_guides_filtered = []
+            for ix, g in enumerate(locus_guides):
+                if (
+                    len(g.guide_seq) == 23
+                    and interval_start <= g.absolute_cut_pos <= interval_end
+                ):
+                    locus_guides_filtered.append(g)
 
-            self.guides.extend(locus_guides)
+            self.guides.extend(locus_guides_filtered)
 
+        # sort guides by cut position
         sorted_guides = []
         for ix, g in enumerate(sorted(self.guides, key=lambda g: g.absolute_cut_pos)):
-            g.id = f"gRNA-{ix+1}"
+            g.id = f"gRNA-{ix + 1}"
             sorted_guides.append(g)
 
         self.guides = sorted_guides
@@ -281,7 +285,7 @@ class Locus:
     def simulate_end_joining(self, n_patterns=5, length_weight=20):
         """Simulate end-joining and find MMEJ deletion patterns for each gRNA.
 
-        Microhomology scores are calculated based on proposed scoring model descibed by
+        Microhomology scores are calculated based on proposed scoring model described by
         Bae et al. 2014.
 
         Parameters
@@ -290,7 +294,7 @@ class Locus:
             Number of top scored MMEJ deletion patterns reported. By default 5.
         length_weight : int, optional
             Length weight parameter used in MMEJ scoring as defined by Bae et al. 2015.
-            By default 20.
+            By default, 20.
         """
 
         if len(self.guides) == 0:
@@ -308,6 +312,8 @@ class Locus:
             If provided, off-target search is performed in the external genome rather
             than in the genome which Locus is a part of. By default None.
         """
+
+        # TODO create mismatch/offtarget string to show in the table
 
         if external_genome:
             index_path = external_genome.bowtie_index
@@ -473,7 +479,9 @@ class Locus:
                     if layer_data.shape[0] == self.length:
                         self._apply_clipped_layer_data(self.guides, name, layer_data)
                     else:
-                        raise ValueError("Layer and locus not the same lenght.")
+                        raise ValueError(
+                            f"Layer and locus not the same lenght ({layer_data.shape[0]}, {self.length})."
+                        )
         else:
             raise ValueError("No guides to apply the data to.")
 
@@ -507,6 +515,7 @@ class Locus:
                     layer_name not in g.layers.keys()
                     and layer_name not in self.layers.keys()
                 ):
+                    print(g, layer_name, self.layers.keys(), g.layers.keys())
                     raise ValueError(
                         f"Layer {layer_name} does not exist on `Locus` or `Guide` object."
                     )
@@ -528,8 +537,10 @@ class Locus:
                     layer_data = method(layer_data)
                 elif isinstance(layer_data, float) or isinstance(layer_data, int):
                     layer_data = float(layer_data)
+                elif isinstance(layer_data, (pd.Series, list)):
+                    layer_data = method(np.array(layer_data))
                 else:
-                    layer_data = np.nan
+                    raise TypeError("Type of layer data is not valid.")
 
                 guide_data.append(layer_data)
             locus_data.append(guide_data)
@@ -544,7 +555,7 @@ class Locus:
         ranking_method="TOPSIS",
         norm_method="Vector",
     ):
-        """[summary]
+        """Ranks guides based on the layer data.
 
         Returns
         -------
@@ -584,7 +595,6 @@ class Locus:
         if layer_names:
             for layer in guide_layer_names:
                 if layer not in self._layers.keys() and layer not in guide_layer_names:
-                    print(self._layers.keys(), guide_layer_names)
                     raise ValueError(
                         f"Layer {layer} is not added to `Locus` or `Guide`."
                     )
@@ -601,6 +611,7 @@ class Locus:
             alt_names=[g.id for g in self.guides],
         )
 
+        # order ranks from best to worst
         rank_asc = np.argsort([-r[1] for r in rank_scores])
 
         for i, (g_id, rank_score) in enumerate(rank_scores):
@@ -620,12 +631,17 @@ class Locus:
         else:
             raise ValueError("Filename required to save CSV with gRNAs.")
 
+    # TODO: bed is 0-based, but gRNAs are 1-based
     def guides_to_bed(self, filename):
         """Save gRNAs in BED file."""
         if filename:
             return _guides_to_bed(self.guides, filename)
         else:
             raise ValueError("Filename required to save BED with gRNAs.")
+
+    # TODO: optimise saving a list of guides - include only numerical values
+    # TODO: save a detailed list of guides
+    # TODO: plot the locus
 
 
 """
@@ -650,23 +666,24 @@ def _prepare_annotation(annotation_file_abspath, as_df=True):
 
 
 def locus_from_coordinates(genome, chromosome, start, end):
-    """[summary]
+    """Create a locus from coordinates. Coordinates are 1-based. If annotation
+    file is provided, it will be used to annotate the locus.
 
     Parameters
     ----------
     genome : Genome
-        [description]
+        Genome object. Can be created using `Genome` class.
     chromosome : str
-        [description]
+        Chromosome name.
     start : int
-        [description]
+        Start position.
     end : int
-        [description]
+        End position.
 
     Returns
     -------
     Locus
-        [description]
+        Locus object.
     """
 
     locus_sequence = Fasta(str(genome.genome_file_abspath)).get_seq(
@@ -679,9 +696,10 @@ def locus_from_coordinates(genome, chromosome, start, end):
             pyranges.PyRanges(chromosomes=[chromosome], starts=[start], ends=[end])
         ).df
 
-        if genome.annotation_file_abspath.suffix in [".gff3", ".gff"]:
+        # TODO: rename Name to Exon not necessarily applicable to all annotations
+        if genome.annotation_file_abspath.suffix.lower() in [".gff3", ".gff"]:
             locus_annotation = locus_annotation.rename(columns={"Name": "Exon"})  # type: ignore
-        elif genome.annotation_file_abspath.suffix in [".gtf"]:
+        elif genome.annotation_file_abspath.suffix.lower() in [".gtf"]:
             locus_annotation = locus_annotation.rename(columns={"gene_id": "ID", "exon_number": "Exon"})  # type: ignore
 
         if len(locus_annotation) > 0:
@@ -697,49 +715,45 @@ def locus_from_coordinates(genome, chromosome, start, end):
 
 
 def locus_from_sequence(sequence, sequence_name=None):
-    """[summary]
+    """Create a locus from sequence.
 
     Parameters
     ----------
     sequence : str
-        [description]
+        DNA sequence
     sequence_name : str, optional
-        [description], by default None
+        Sequence name, by default None
 
     Returns
     -------
     Locus
-        [description]
+        Object representing a locus from given sequence.
     """
     return Locus(sequence=sequence, name=sequence_name)
 
 
 def locus_from_gene(genome, gene_name):
-    """[summary]
+    """Create a locus from gene name. If annotation file is provided, it will
+    be used to annotate the locus.
 
     Parameters
     ----------
     genome : Genome
-        [description]
+        Genome object. Can be created using `Genome` class.
     gene_name : str
-        [description]
+        Gene name. Needs to be present in the annotation file.
 
     Returns
     -------
     Locus
-        [description]
-
-    Raises
-    ------
-    ValueError
-        [description]
-    ValueError
-        [description]
+        Locus object.
     """
     if genome.annotation_file_abspath.exists():
         try:
             ann_db = _prepare_annotation(genome.annotation_file_abspath, as_df=True)
-            gene_annotation = ann_db.query('ID == @gene_name & Feature == "gene"')
+            gene_annotation = ann_db.query(
+                "ID == @gene_name & Feature == @feature_type"
+            )
             chromosome = gene_annotation.Chromosome.values[0]
             start = int(gene_annotation.Start)
             end = int(gene_annotation.End)

@@ -8,7 +8,7 @@ repos:
       - id: check-yaml
   # isort should run before black as black sometimes tweaks the isort output
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.12.0
     hooks:
       - id: isort
   # https://github.com/python/black#version-control-integration
@@ -25,7 +25,7 @@ repos:
     hooks:
       - id: docformatter
         args: [--in-place]
-  - repo: https://gitlab.com/pycqa/flake8
+  - repo: https://github.com/PyCQA/flake8
     rev: 3.9.2
     hooks:
       - id: flake8

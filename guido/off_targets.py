@@ -1,7 +1,7 @@
 import subprocess
 import tempfile
 
-from guido.helpers import rev_comp
+from .helpers import rev_comp
 
 # TODO assuming PAM has at least one arbitrary nucleotide
 

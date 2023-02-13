@@ -1,6 +1,6 @@
-from guido.helpers import rev_comp
-from guido.mmej import generate_mmej_patterns
-from guido.off_targets import calculate_ot_sum_score, run_bowtie
+from .helpers import rev_comp
+from .mmej import generate_mmej_patterns
+from .off_targets import calculate_ot_sum_score, run_bowtie
 
 
 class Guide:
@@ -73,6 +73,9 @@ class Guide:
             name = "gRNA"
         return f"{name}({self.guide_seq}|{self.guide_chrom}:{self.guide_start}-{self.guide_end}|{self.guide_strand}|)"
 
+    def __getattr__(self, attr):
+        return self[attr]
+
     @property
     def location(self):
         """_summary_
@@ -123,11 +126,18 @@ class Guide:
                 sum_score = None
                 oof_score = None
 
+            # TODO: refactor
             self.mmej_patterns = sorted_mmej_patterns
             self.mmej_str = self._create_mmej_oof_string(sorted_mmej_patterns)
 
             self.add_layer("mmej_sum_score", sum_score)
             self.add_layer("mmej_oof_score", oof_score)
+        else:
+            self.mmej_patterns = None
+            self.mmej_str = None
+
+            self.add_layer("mmej_sum_score", 0)
+            self.add_layer("mmej_oof_score", 0)
 
     def find_off_targets(self, genome, **kwargs):
         """[summary]

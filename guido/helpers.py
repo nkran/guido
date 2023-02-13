@@ -33,7 +33,7 @@ def _guides_to_dataframe(guides):
 
 def _guides_to_csv(guides, file):
     guides_df = _guides_to_dataframe(guides).drop(
-        ["mmej_patterns", "off_targets", "_layers"]
+        ["mmej_patterns", "off_targets", "_layers"], errors="ignore"
     )
     guides_df.to_csv(file)
 
@@ -46,3 +46,43 @@ def _guides_to_bed(guides, file):
     ]
     guides_df.to_csv(file, sep="\t", header=False, index=False)
     return None
+
+
+# def render_mmej_table(mmej_patterns):
+
+#     for mmej_pattern in mmej_patterns:
+#         left_seq = mmej_pattern["left"][20:]
+#         right_seq = mmej_pattern["right"][:-20]
+#         pos_mmej = right_seq.index(mmej_pattern["pattern"])
+#         right_del = right_seq[:pos_mmej]
+#         right_mmej = right_seq[pos_mmej : pos_mmej + len(mmej_pattern["pattern"])]
+#         right_rest = right_seq[pos_mmej + len(mmej_pattern["pattern"]) :]
+#         mmej_sequence = [
+#             left_seq,
+#             html.Span([right_del, html.U(right_mmej), right_rest]),
+#         ]
+
+#         pattern_layout = html.Div(
+#             [
+#                 html.Div(
+#                     html.Span(mmej_sequence, className="mmej-pattern"),
+#                     className="col-7",
+#                 ),
+#                 html.Div(
+#                     html.Span(
+#                         round(mmej_pattern["pattern_score"], 2),
+#                         className="mmej-pattern",
+#                     ),
+#                     className="col",
+#                 ),
+#                 html.Div(
+#                     html.Span(mmej_pattern["frame_shift"], className="mmej-pattern"),
+#                     className="col",
+#                 ),
+#                 html.Div(
+#                     html.Span(mmej_pattern["deletion_seq"], className="mmej-pattern"),
+#                     className="col-2",
+#                 ),
+#             ],
+#             className="row border-bottom border-1",
+#         )

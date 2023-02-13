@@ -11,12 +11,10 @@ Todo
 Todo
 
 ## Developer setup
-
-
-Install [poetry](https://python-poetry.org/docs/#installation) somehow, e.g.:
+Install [poetry](https://python-poetry.org/docs/#installation):
 
 ```bash
-$ pip3 install poetry
+$ pip install poetry
 ```
 
 Create development environment:
@@ -42,12 +40,6 @@ Run pre-commit checks (isort, black, blackdoc, flake8, ...) manually:
 
 ```bash
 $ pre-commit run --all-files
-```
-
-Run tests:
-
-```bash
-$ pytest -v
 ```
 
 Bump version, build and publish to PyPI:
