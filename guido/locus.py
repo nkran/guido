@@ -752,27 +752,28 @@ def locus_from_gene(genome, gene_name):
         try:
             ann_db = _prepare_annotation(genome.annotation_file_abspath, as_df=True)
             gene_annotation = ann_db.query(
-                "ID == @gene_name & Feature == @feature_type"
+                "ID == @gene_name & (Feature == 'protein_coding_gene' | Feature == 'gene')"
             )
+
             chromosome = gene_annotation.Chromosome.values[0]
-            start = int(gene_annotation.Start)
+            start = int(gene_annotation.Start) + 1  # pyranges is 0-based
             end = int(gene_annotation.End)
 
             locus_annotation = ann_db.query(
                 f"(ID == @gene_name) & (Chromosome == @chromosome) &  \
-                  (((Start >= {start - 1}) & (Start <= {end + 1})) | \
-                  ((End >= {start - 1}) & (End <= {end + 1})))"
+                  (((Start >= {start}) & (Start <= {end})) | \
+                  ((End >= {start}) & (End <= {end})))"
             )
 
-            locus_sequence = Fasta(str(genome.genome_file_abspath)).get_seq(
-                chromosome, start, end
-            )
+            locus_sequence = Fasta(
+                str(genome.genome_file_abspath), one_based_attributes=True
+            ).get_seq(chromosome, start, end)
 
             return Locus(
                 genome=genome, sequence=locus_sequence, annotation=locus_annotation
             )
 
-        except Exception:
-            raise ValueError(f"Gene {gene_name} not found.")
+        except Exception as e:
+            raise ValueError(f"Gene {gene_name} not found. (Error: {e})")
     else:
         raise ValueError("Annotation file not valid.")  # TODO: fix message
