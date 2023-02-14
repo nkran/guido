@@ -7,11 +7,17 @@ from .helpers import rev_comp
 
 
 def calculate_ot_sum_score(off_targets):
+    """Calculate sum score for a list of off-targets."""
     ot_mismatch_weights = [10, 5, 4, 3, 1]
     return sum([ot_mismatch_weights[len(ot["mismatches"]) - 1] for ot in off_targets])
 
 
 def _parse_mismatches(mismatches, strand, seq_len):
+    """Parse mismatches from bowtie output.
+
+    Returns a dictionary with mismatches positions as keys and
+    mismatched nucleotides as values.
+    """
     mm_split = mismatches.split(",")
     mm_dict = {}
     for m in mm_split:
@@ -35,12 +41,40 @@ def run_bowtie(
     guides,
     pam="NGG",
     core_length=10,
-    core_mismatches=0,
+    core_mismatches=2,
     total_mismatches=4,
     genome_index_path=None,
     threads=1,
     bowtie_path="bin/bowtie/",
 ):
+    """Run bowtie to find off-targets for a list of guides.
+
+    # TODO: add description of mismatch settings
+
+    Parameters
+    ----------
+    guides : Guide[]
+        List of guides to find off-targets for.
+    pam : str, optional
+        PAM sequence, by default "NGG"
+    core_length : int, optional
+        gRNA core length, by default 10
+    core_mismatches : int, optional
+        Allowed mismatches in core gRNA sequence, by default 2
+    total_mismatches : int, optional
+        Total allowed mismatches. Max 4, by default 4
+    genome_index_path : Genome, optional
+        Genome object to search off-targets in, by default None
+    threads : int, optional
+        Number of threads to run bowtie with, by default 1
+    bowtie_path : str, optional
+        Path to bowtie binary, by default "bin/bowtie/"
+
+    Returns
+    -------
+    list
+        List of off-targets for each guide.
+    """
 
     pam_mismatches = rev_comp(pam).count("N")
     pam_length = len(pam)

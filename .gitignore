@@ -1,6 +1,6 @@
 # Guido specific
 bin/
-tests
+tests/data/
 gcs_cache_*/
 
 # Byte-compiled / optimized / DLL files

@@ -15,6 +15,27 @@ class Guide:
         chromosome="seq",
         start=0,
     ):
+        """Guide object.
+
+        Parameters
+        ----------
+        sequence : str
+            gRNA sequence
+        pam_position : int
+            Position of PAM sequence in gRNA sequence
+        pam_len : int
+            Length of PAM sequence
+        strand : str, optional
+            Strand of the gRNA, by default "+"
+        max_flanking_length : int, optional
+            Max flanking length taken into account for MMEJ calculation, by default 75
+        cut_offset : int, optional
+            Cut offset from the beginning of PAM, by default 3
+        chromosome : str, optional
+            Chromosome where the gRNA is located, by default "seq"
+        start : int, optional
+            Start position of the gRNA on the chromosome, by default 0
+        """
 
         length = len(sequence)
         cut_pos = pam_position - cut_offset
@@ -49,7 +70,7 @@ class Guide:
         self.guide_pam = guide_seq[-pam_len:]
         self.guide_chrom = chromosome
         self.guide_start = absolute_guide_start
-        self.guide_end = absolute_guide_end
+        self.guide_end = absolute_guide_end - 1  # 1-based (last position inclusive)
         self.guide_strand = strand
         self.relative_cut_pos = relative_cut_pos
         self.absolute_cut_pos = absolute_cut_pos
@@ -78,12 +99,12 @@ class Guide:
 
     @property
     def location(self):
-        """_summary_
+        """Returns the location of the guide in the format: chr:start-end.
 
         Returns
         -------
-        _type_
-            _description_
+        str
+            String representation of gRNA location
         """
         return f"{self.guide_chrom}:{self.guide_start}-{self.guide_end}"
 

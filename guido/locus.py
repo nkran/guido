@@ -49,11 +49,11 @@ class Locus:
         ```
         >>> import guido
         >>> seq = "TTATCATCCACTCTGACGGGTGGTATTGCGCAACTCCACGCCATCAAACATGTTCAGATTATGCAATCGTGAGTATTCGTTGACCACCGCTTGACCTGTGT"
-        >>> l = guido.Locus(
+        >>> loc = guido.Locus(
         ...     sequence=seq, name="AgamP4_2R", start=48714554, end=48714654
         ... )
-        >>> l.find_guides()
-        >>> l.guides
+        >>> loc.find_guides()
+        >>> loc.guides
         [gRNA-1(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714584|-|),
          gRNA-2(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714577|+|),
          gRNA-3(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714612|-|),
@@ -105,13 +105,13 @@ class Locus:
         ```
         >>> import guido
         >>> seq = "TTATCATCCACTCTGACGGGTGGTATTGCGCAACTCCACGCCATCAAACATGTTCAGATTATGCAATCGTGAGTATTCGTTGACCACCGCTTGACCTGTGT"
-        >>> l = guido.Locus(
+        >>> loc = guido.Locus(
         ...     sequence=seq, name="AgamP4_2R", start=48714554, end=48714654
         ... )
-        >>> l.find_guides()
-        >>> l.guide("gRNA-1")
+        >>> loc.find_guides()
+        >>> loc.guide("gRNA-1")
         gRNA-1(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714584|-|)
-        >>> l.guide(0)
+        >>> loc.guide(0)
         gRNA-1(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714584|-|)
         ```
         """
@@ -204,6 +204,35 @@ class Locus:
     ):
         """Find gRNAs in the locus.
 
+        Examples
+        --------
+        ```
+        >>> import guido
+        >>> genome = guido.load_genome_from_file(
+        ...     guido_file="/Users/nkranjc/imperial/ref/new/AgamP4.guido"
+        ... )
+        >>> loc = guido.locus_from_coordinates(genome, "AgamP4_2R", 48714541, 48714666)
+        >>> loc.find_guides()
+        >>> loc.guides
+            [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
+            gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
+            gRNA-3(AGTTTATCATCCACTCTGACGGG|AgamP4_2R:48714551-48714573|+|),
+            gRNA-4(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714576|+|),
+            gRNA-5(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714611|-|),
+            gRNA-6(CATAATCTGAACATGTTTGATGG|AgamP4_2R:48714594-48714616|-|),
+            gRNA-7(GTTTAACACAGGTCAAGCGGTGG|AgamP4_2R:48714637-48714659|-|),
+            gRNA-8(TATGTTTAACACAGGTCAAGCGG|AgamP4_2R:48714640-48714662|-|)]
+
+        >>> loc.find_guides(selected_features={"exon"})
+        >>> loc.guides
+            [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
+            gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
+            gRNA-3(AGTTTATCATCCACTCTGACGGG|AgamP4_2R:48714551-48714573|+|),
+            gRNA-4(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714576|+|),
+            gRNA-5(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714611|-|),
+            gRNA-6(CATAATCTGAACATGTTTGATGG|AgamP4_2R:48714594-48714616|-|)]
+        ```
+
         Parameters
         ----------
         pam : str, optional
@@ -215,6 +244,11 @@ class Locus:
         selected_features : str, optional
             Limit gRNA search on only specified genomic features. Features are defined
             in the provided genome annotation file. By default {"all"}
+
+        Returns
+        -------
+        sorted_guides : list
+            List of gRNAs sorted by their position in the locus.
         """
 
         # save searched PAM
@@ -338,7 +372,7 @@ class Locus:
         return guides_bowtie_offtargets
 
     def _apply_clipped_layer_data(self, guides, layer_name, layer_data):
-        """_summary_"""
+        """Apply layer data to guides."""
         if len(guides) > 0:
             for g in self.guides:
                 ix = g.guide_start - self.start
@@ -362,6 +396,7 @@ class Locus:
 
     # TODO: move to util functions
     def _guide_sequence_diversity(self, guide, g, pos):
+        """Calculate sequence diversity for each region of the guide."""
         guide_regions = self._get_guide_regions(guide)
         regions_vals = []
         for r in guide_regions:
@@ -377,6 +412,7 @@ class Locus:
         return regions_vals
 
     def _guide_alt_ac(self, guide, g, pos):
+        """Calculate alternative allele count for each region of the guide."""
         guide_regions = self._get_guide_regions(guide)
         regions_vals = []
         for r in guide_regions:
@@ -389,6 +425,7 @@ class Locus:
         return regions_vals
 
     def _guide_n_variants(self, guide, g, pos):
+        """Calculate number of variants for each region of the guide."""
         guide_regions = self._get_guide_regions(guide)
         regions_vals = []
         for r in guide_regions:
@@ -403,7 +440,8 @@ class Locus:
     def _apply_variation_layer_data(
         self, guides, layer_name, layer_genotype_data, layer_pos
     ):
-        """_summary_"""
+        """Apply sequence diversity, alternative allele count and number of
+        variants as layers."""
         guide_regions = ["pam", "seed", "small_seed", "guide"]
 
         if len(guides) > 0:
@@ -430,12 +468,12 @@ class Locus:
 
     @property
     def layers(self):
-        """_summary_
+        """Layers of the locus.
 
         Returns
         -------
-        _type_
-            _description_
+        Layers
+            List of layers
         """
         return self._layers
 
@@ -449,7 +487,12 @@ class Locus:
     ):
         """Adds a layer with the data to the locus.
 
-        TODO: add examples
+        Examples
+        --------
+        # TODO: make it more intuitive
+        >>> locus = Locus("chr1", 100, 200)
+        >>> layer_data = np.random.rand(100)
+        >>> locus.add_layer("random", layer_data)
 
         Parameters
         ----------
@@ -486,6 +529,7 @@ class Locus:
             raise ValueError("No guides to apply the data to.")
 
     def _guide_layers(self):
+        """Returns a list of all the layers that are present in the gRNAs."""
         layers = []
         for g in self.guides:
             layers.extend(g.layers.keys())
@@ -498,14 +542,14 @@ class Locus:
         Parameters
         ----------
         rank_layer_names : list
-            [description]
+            List of layer names to be used in the ranking.
         method : [type], optional
-            [description], by default np.mean
+            Method to use to combine the layer data, by default np.mean
 
         Returns
         -------
         np.ndarray
-            [description]
+            Matrix with the layer data for each gRNA.
         """
         locus_data = []
         for g in self.guides:
@@ -559,15 +603,8 @@ class Locus:
 
         Returns
         -------
-        [type]
-            [description]
-
-        Raises
-        ------
-        ValueError
-            [description]
-        ValueError
-            [description]
+        list
+            List of ranked guides.
 
         TODO: - How do I handle instances where a layer exists only on some guides?
               - nan vs 0 when no data on var layers
@@ -650,6 +687,7 @@ Locus creation ------------------
 
 
 def _prepare_annotation(annotation_file_abspath, as_df=True):
+    """Prepare annotation file for use with pyranges."""
     if annotation_file_abspath.suffix in [".gff3", ".gff"]:
         ann_db = pyranges.read_gff3(str(annotation_file_abspath), as_df=as_df)
         if as_df:
