@@ -1,3 +1,5 @@
+from collections import Counter
+
 from .helpers import rev_comp
 from .mmej import generate_mmej_patterns
 from .off_targets import calculate_ot_sum_score, run_bowtie
@@ -161,7 +163,9 @@ class Guide:
             self.add_layer("mmej_oof_score", 0)
 
     def find_off_targets(self, genome, **kwargs):
-        """[summary]
+        """Finds off-targets for the guide. The off-targets are found using
+        Bowtie. Bowtie index for the genome must be built before running this
+        function.
 
         Parameters
         ----------
@@ -191,6 +195,42 @@ class Guide:
 
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")
+
+    def off_targets_string(self):
+        """Returns a string representation of the off-targets.
+
+        The string representatio captures the number of off-targets with certain number
+        of mismatches: n0|n1|n2|n3|n4|n5 (total), where n0 is the number of off-targets
+        with 0 mismatches, n1 is the number of off-targets with 1 mismatch, etc.
+
+        For example, if there are 3 off-targets with 0 mismatches, 2 with 1 mismatch,
+        1 with 2 mismatches, 0 with 3 mismatches, 5 with 4 mismatches and 1 with 5 mismatches
+        the string representation will be "3|2|1|0|5|1 (13)". In the parenthesis, the total
+        number of off-targets is given.
+
+        Returns
+        -------
+        str
+            String representation of off-targets.
+        """
+
+        # if there are no off-targets, return 0
+        if not self.off_targets:
+            return "0"
+
+        # count the number of off-targets with certain number of mismatches
+        counts = Counter(
+            [
+                len(ot["mismatches"].keys()) - self.guide_pam.count("N")
+                for ot in self.off_targets
+            ]
+        )
+
+        # create a string representation
+        ot_str = "|".join([str(counts[i]) for i in range(max(counts.keys()) + 1)])
+        ot_str += f" ({len(self.off_targets)})"
+
+        return ot_str
 
     @property
     def layers(self):
