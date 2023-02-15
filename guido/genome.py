@@ -33,6 +33,7 @@ class Genome:
         genome_name,
         genome_file_abspath=None,
         annotation_file_abspath=None,
+        bowtie_index_abspath=None,
     ):
         """_summary_
 
@@ -63,6 +64,10 @@ class Genome:
                 raise ValueError(
                     f"Genome file {genome_file_abspath} does noth exist or is not in the right format."
                 )
+
+        if bowtie_index_abspath:
+            self.bowtie_index = Path(bowtie_index_abspath)
+            self._bowtie_ignore = True
 
         if annotation_file_abspath:
             if check_file(annotation_file_abspath, [".gtf", ".gff3"]):
