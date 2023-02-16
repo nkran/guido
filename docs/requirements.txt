@@ -1,0 +1,4 @@
+numpydoc
+sphinx
+sphinx-issues
+sphinx_rtd_theme
