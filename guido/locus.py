@@ -45,8 +45,6 @@ class Locus:
 
         Examples
         ----------
-
-        ```
         >>> import guido
         >>> seq = "TTATCATCCACTCTGACGGGTGGTATTGCGCAACTCCACGCCATCAAACATGTTCAGATTATGCAATCGTGAGTATTCGTTGACCACCGCTTGACCTGTGT"
         >>> loc = guido.Locus(
@@ -58,7 +56,6 @@ class Locus:
          gRNA-2(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714577|+|),
          gRNA-3(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714612|-|),
          gRNA-4(CATAATCTGAACATGTTTGATGG|AgamP4_2R:48714594-48714617|-|)]
-        ```
         """
 
         self.sequence = sequence
@@ -88,7 +85,7 @@ class Locus:
         self.length = len(self.sequence)
 
     def guide(self, ix):
-        """Fetch a guide from the locus by it's index or name.
+        """Fetch a guide from the locus by its index or name.
 
         Parameters
         ----------
@@ -100,9 +97,8 @@ class Locus:
         g: Guide
             Guide object representing a gRNA
 
-        Example
-        -------
-        ```
+        Examples
+        --------
         >>> import guido
         >>> seq = "TTATCATCCACTCTGACGGGTGGTATTGCGCAACTCCACGCCATCAAACATGTTCAGATTATGCAATCGTGAGTATTCGTTGACCACCGCTTGACCTGTGT"
         >>> loc = guido.Locus(
@@ -113,7 +109,6 @@ class Locus:
         gRNA-1(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714584|-|)
         >>> loc.guide(0)
         gRNA-1(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714584|-|)
-        ```
         """
 
         if isinstance(ix, str):
@@ -204,35 +199,6 @@ class Locus:
     ):
         """Find gRNAs in the locus.
 
-        Examples
-        --------
-        ```
-        >>> import guido
-        >>> genome = guido.load_genome_from_file(
-        ...     guido_file="/Users/nkranjc/imperial/ref/new/AgamP4.guido"
-        ... )
-        >>> loc = guido.locus_from_coordinates(genome, "AgamP4_2R", 48714541, 48714666)
-        >>> loc.find_guides()
-        >>> loc.guides
-            [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
-            gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
-            gRNA-3(AGTTTATCATCCACTCTGACGGG|AgamP4_2R:48714551-48714573|+|),
-            gRNA-4(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714576|+|),
-            gRNA-5(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714611|-|),
-            gRNA-6(CATAATCTGAACATGTTTGATGG|AgamP4_2R:48714594-48714616|-|),
-            gRNA-7(GTTTAACACAGGTCAAGCGGTGG|AgamP4_2R:48714637-48714659|-|),
-            gRNA-8(TATGTTTAACACAGGTCAAGCGG|AgamP4_2R:48714640-48714662|-|)]
-
-        >>> loc.find_guides(selected_features={"exon"})
-        >>> loc.guides
-            [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
-            gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
-            gRNA-3(AGTTTATCATCCACTCTGACGGG|AgamP4_2R:48714551-48714573|+|),
-            gRNA-4(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714576|+|),
-            gRNA-5(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714611|-|),
-            gRNA-6(CATAATCTGAACATGTTTGATGG|AgamP4_2R:48714594-48714616|-|)]
-        ```
-
         Parameters
         ----------
         pam : str, optional
@@ -249,6 +215,35 @@ class Locus:
         -------
         sorted_guides : list
             List of gRNAs sorted by their position in the locus.
+
+        Examples
+        --------
+        >>> import guido
+        >>> genome = guido.load_genome_from_file(
+        ...     guido_file="/Users/nkranjc/imperial/ref/new/AgamP4.guido"
+        ... )
+        >>> loc = guido.locus_from_coordinates(genome, "AgamP4_2R", 48714541, 48714666)
+        >>> loc.find_guides()
+        >>> loc.guides
+        [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
+        gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
+        gRNA-3(AGTTTATCATCCACTCTGACGGG|AgamP4_2R:48714551-48714573|+|),
+        gRNA-4(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714576|+|),
+        gRNA-5(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714611|-|),
+        gRNA-6(CATAATCTGAACATGTTTGATGG|AgamP4_2R:48714594-48714616|-|),
+        gRNA-7(GTTTAACACAGGTCAAGCGGTGG|AgamP4_2R:48714637-48714659|-|),
+        gRNA-8(TATGTTTAACACAGGTCAAGCGG|AgamP4_2R:48714640-48714662|-|)]
+
+        Searching for gRNAs in a specific genomic feature:
+
+        >>> loc.find_guides(selected_features={"exon"})
+        >>> loc.guides
+        [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
+        gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
+        gRNA-3(AGTTTATCATCCACTCTGACGGG|AgamP4_2R:48714551-48714573|+|),
+        gRNA-4(TTATCATCCACTCTGACGGGTGG|AgamP4_2R:48714554-48714576|+|),
+        gRNA-5(TCTGAACATGTTTGATGGCGTGG|AgamP4_2R:48714589-48714611|-|),
+        gRNA-6(CATAATCTGAACATGTTTGATGG|AgamP4_2R:48714594-48714616|-|)]
         """
 
         # save searched PAM
@@ -487,13 +482,6 @@ class Locus:
     ):
         """Adds a layer with the data to the locus.
 
-        Examples
-        --------
-        # TODO: make it more intuitive
-        >>> locus = Locus("chr1", 100, 200)
-        >>> layer_data = np.random.rand(100)
-        >>> locus.add_layer("random", layer_data)
-
         Parameters
         ----------
         name : str
@@ -503,13 +491,13 @@ class Locus:
         apply_to_guides : bool, optional
             Apply layer data to gRNAs when adding it to the locus. By default True.
 
-        Raises
-        ------
-        ValueError
-            Layer data and locus are not the same size
-        ValueError
-            No gRNAs in the locus to apply the data to.
+        Examples
+        --------
+        >>> locus = Locus("chr1", 100, 200)
+        >>> layer_data = np.random.rand(100)
+        >>> locus.add_layer("random", layer_data)
         """
+        # TODO: make it more intuitive
         self._layers[name] = layer_data
 
         if apply_to_guides:

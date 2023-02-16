@@ -50,11 +50,11 @@ To load a `Genome` instance from a `AgamP4.guido` file that was created using `g
 >>> loc = guido.locus_from_coordinates(genome, 'AgamP4_2R', 48714541, 48714666)
 
 >>> loc.find_guides()
-... [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
-     gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
+    ['gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)',
+     'gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|)',
      ...
-     gRNA-7(GTTTAACACAGGTCAAGCGGTGG|AgamP4_2R:48714637-48714659|-|),
-     gRNA-8(TATGTTTAACACAGGTCAAGCGG|AgamP4_2R:48714640-48714662|-|)]
+     'gRNA-7(GTTTAACACAGGTCAAGCGGTGG|AgamP4_2R:48714637-48714659|-|)',
+     'gRNA-8(TATGTTTAACACAGGTCAAGCGG|AgamP4_2R:48714640-48714662|-|)']
 ```
 
 Alternatively, you can use the `locus_from_gene()` function to create a `Locus` instance and limit the search for gRNAs to a specific feature that is defined in the genome annotation file:
@@ -70,21 +70,21 @@ After running `loc.find_guides()`, the `Locus` instance will contain a list of `
 
 ```python
 >>> loc.guides
-... [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
-     gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
+    ['gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)',
+     'gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|)',
      ...
-     gRNA-7(GTTTAACACAGGTCAAGCGGTGG|AgamP4_2R:48714637-48714659|-|),
-     gRNA-8(TATGTTTAACACAGGTCAAGCGG|AgamP4_2R:48714640-48714662|-|)]
+     'gRNA-7(GTTTAACACAGGTCAAGCGGTGG|AgamP4_2R:48714637-48714659|-|'),
+     'gRNA-8(TATGTTTAACACAGGTCAAGCGG|AgamP4_2R:48714640-48714662|-|)']
 ```
 
 You can access a gRNA by its index or a name:
 
 ```python
 >>> loc.guides[0]
-... gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)
+    'gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)'
 
 >>> loc.guides['gRNA-1']
-... gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)
+    'gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)'
 ```
 
 ## Docs
