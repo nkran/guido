@@ -1,13 +1,33 @@
+import os
+from distutils import dir_util
+
+import numpy as np
 import pytest
+from azimuth import model_comparison
 from pyfaidx import Fasta
+from pytest import fixture
 
 from guido.genome import load_genome_from_file
 from guido.locus import locus_from_coordinates, locus_from_gene
 from guido.off_targets import calculate_ot_sum_score
 
-# prepare files
+# prepare files - fixtures
 # move genome to separate function to load when needed
 # download to temp from vectorbase
+
+
+@fixture
+def datadir(tmpdir, request):
+    """Fixture responsible for searching a folder with the same name of test
+    module and, if available, moving all contents to a temporary directory so
+    tests can use them freely."""
+    filename = request.module.__file__
+    test_dir, _ = os.path.splitext(filename)
+
+    if os.path.isdir(test_dir):
+        dir_util.copy_tree(test_dir, str(tmpdir))
+
+    return tmpdir
 
 
 def load_genome():
@@ -119,3 +139,22 @@ def test_find_offtargets(chromosome, start, end):
 
     assert loc.guide(0).off_targets_string() == "0|0|0|0|1|5 (6)"
     assert loc.guide(1).off_targets_string() == "0|0|0|0|0|7 (7)"
+
+
+def test_azimuth():
+
+    sequences = np.array(
+        [
+            "ACAGCTGATCTCCAGATATGACCATGGGTT",
+            "CAGCTGATCTCCAGATATGACCATGGGTTT",
+            "CCAGAAGTTTGAGCCACAAACCCATGGTCA",
+        ]
+    )
+    amino_acid_cut_positions = np.array([2, 2, 4])
+    percent_peptides = np.array([0.18, 0.18, 0.35])
+    predictions = model_comparison.predict(
+        sequences, amino_acid_cut_positions, percent_peptides, length_audit=True
+    )
+
+    for i, prediction in enumerate(predictions):
+        print(sequences[i], prediction)
