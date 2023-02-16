@@ -3,6 +3,9 @@ bin/
 tests/data/
 gcs_cache_*/
 
+.idea/
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
