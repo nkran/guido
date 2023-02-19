@@ -2,7 +2,7 @@ import pickle
 import subprocess
 from pathlib import Path
 
-from pyfaidx import Faidx
+from pyfaidx import Faidx, Fasta
 
 
 def check_file(filename, supported_ext):
@@ -179,6 +179,11 @@ class Genome:
                 print(
                     f"{self.genome_name} genome data can now be used by Guido: {str(guido_file)}"
                 )
+
+    @property
+    def sequence(self):
+        if self.is_built:
+            return Fasta(str(self.genome_file_abspath))
 
 
 def load_genome_from_file(guido_file):
