@@ -668,6 +668,17 @@ class Locus:
     # TODO: save a detailed list of guides
     # TODO: plot the locus
 
+    def add_azimuth_score(self):
+        """Apply Azimuth score to a list of guides.
+
+        Azimuth is a machine learning-based predictive modelling of CRISPR/Cas9 guide efficiency. Sometimes its reffered to as
+        Doench 2016 score.
+
+        Described in https://doi.org/10.1038/nbt.3437 (Doench et al., 2016)
+        """
+
+        return [g.add_azimuth_score() for g in self.guides]
+
 
 """
 Locus creation ------------------

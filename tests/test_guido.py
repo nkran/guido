@@ -1,9 +1,7 @@
 import os
 from distutils import dir_util
 
-import numpy as np
 import pytest
-from azimuth import model_comparison
 from pyfaidx import Fasta
 from pytest import fixture
 
@@ -141,20 +139,25 @@ def test_find_offtargets(chromosome, start, end):
     assert loc.guide(1).off_targets_string() == "0|0|0|0|0|7 (7)"
 
 
-def test_azimuth():
+@pytest.mark.parametrize(
+    "chromosome, start, end",
+    [
+        ("AgamP4_2R", 48714541, 48714666),
+    ],
+)
+def test_azimuth_score(chromosome, start, end):
+    genome = load_genome()
+    loc = locus_from_coordinates(genome, chromosome, start, end)
 
-    sequences = np.array(
-        [
-            "ACAGCTGATCTCCAGATATGACCATGGGTT",
-            "CAGCTGATCTCCAGATATGACCATGGGTTT",
-            "CCAGAAGTTTGAGCCACAAACCCATGGTCA",
-        ]
-    )
-    amino_acid_cut_positions = np.array([2, 2, 4])
-    percent_peptides = np.array([0.18, 0.18, 0.35])
-    predictions = model_comparison.predict(
-        sequences, amino_acid_cut_positions, percent_peptides, length_audit=True
-    )
+    # find guides
+    loc.find_guides()
 
-    for i, prediction in enumerate(predictions):
-        print(sequences[i], prediction)
+    # add azimuth scores
+    scores = loc.add_azimuth_score()
+
+    assert len(scores) == len(loc.guides)
+    assert loc.guide(7).layer("azimuth_score") == 0.0
+    assert len(loc.guide(7).guide_long_seq) != 30
+
+    # test if method works the same when called on the locus or on the guide
+    # test if compare_model works the same when called on the locus or on the sequence independently in the test

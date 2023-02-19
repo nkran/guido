@@ -1,5 +1,8 @@
 from collections import Counter
 
+import numpy as np
+from azimuth import model_comparison
+
 from .helpers import rev_comp
 from .mmej import generate_mmej_patterns
 from .off_targets import calculate_ot_sum_score, run_bowtie
@@ -45,12 +48,16 @@ class Guide:
         relative_guide_start = cut_pos - 17
         relative_guide_end = cut_pos + cut_offset + pam_len
         guide_seq = sequence[relative_guide_start:relative_guide_end]
+        guide_long_seq = sequence[relative_guide_start - 4 : relative_guide_end + 3]
 
         if strand == "-":
             cut_pos = pam_position + pam_len + cut_offset
             relative_guide_start = pam_position
             relative_guide_end = cut_pos + 17
             guide_seq = rev_comp(sequence[relative_guide_start:relative_guide_end])
+            guide_long_seq = rev_comp(
+                sequence[relative_guide_start - 3 : relative_guide_end + 4]
+            )
 
         absolute_cut_pos = start + cut_pos
         absolute_guide_start = start + relative_guide_start
@@ -69,6 +76,7 @@ class Guide:
         # Guide properties
         self.locus_seq = sequence[slice(left_slice, right_slice)]
         self.guide_seq = guide_seq
+        self.guide_long_seq = guide_long_seq
         self.guide_pam = guide_seq[-pam_len:]
         self.guide_chrom = chromosome
         self.guide_start = absolute_guide_start
@@ -270,3 +278,37 @@ class Guide:
             return self._layers[key]
         else:
             raise ValueError(f"Layer {key} was not added to the gRNA.")
+
+    def add_azimuth_score(self):
+        """Apply Azimuth score to a list of guides.
+
+        Azimuth is a machine learning-based predictive modelling of CRISPR/Cas9 guide efficiency. Sometimes its reffered to as
+        Doench 2016 score.
+
+        Described in https://doi.org/10.1038/nbt.3437 (Doench et al., 2016)
+
+        Returns
+        -------
+        float
+            Azimuth score.
+        """
+
+        # Azimuth model requires 30bp sequences
+        if (
+            len(self.guide_long_seq) == 30
+            and "N" not in self.guide_long_seq
+            and self.guide_pam.endswith("GG")
+            and len(self.guide_pam) == 3
+        ):
+            score_azimuth = float(
+                model_comparison.predict(
+                    np.array([self.guide_long_seq]), length_audit=True, pam_audit=True
+                )[0]
+            )
+        else:
+            score_azimuth = 0.0
+
+        # add layer to gRNA
+        self.add_layer("azimuth_score", score_azimuth)
+
+        return score_azimuth
