@@ -8,8 +8,13 @@ import pyranges
 from pyfaidx import Fasta, Sequence
 
 from .guides import Guide
-from .helpers import _guides_to_bed, _guides_to_csv, _guides_to_dataframe
-from .off_targets import calculate_ot_sum_score, run_bowtie
+from .helpers import (
+    _guides_to_bed,
+    _guides_to_csv,
+    _guides_to_dataframe,
+    load_cfd_scoring_matrix,
+)
+from .off_targets import calculate_cfd_score, calculate_ot_sum_score, run_bowtie
 
 
 class Locus:
@@ -356,10 +361,19 @@ class Locus:
                 guides=self.guides, pam=self.pam, genome_index_path=index_path, **kwargs
             )
 
+            mm_scores, pam_scores = load_cfd_scoring_matrix()
+
             for ix, G in enumerate(self.guides):
                 if ix in guides_bowtie_offtargets.keys():
                     G.off_targets = guides_bowtie_offtargets[ix]
                     G.add_layer("ot_sum_score", calculate_ot_sum_score(G.off_targets))
+
+                    # Calculate CFD scores
+                    cfd_scores = calculate_cfd_score(
+                        G, G.off_targets, mm_scores, pam_scores
+                    )
+                    G.add_layer("ot_cfd_score_mean", cfd_scores.mean())
+                    G.add_layer("ot_cfd_score_max", cfd_scores.max())
 
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")

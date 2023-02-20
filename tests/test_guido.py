@@ -161,3 +161,25 @@ def test_azimuth_score(chromosome, start, end):
 
     # test if method works the same when called on the locus or on the guide
     # test if compare_model works the same when called on the locus or on the sequence independently in the test
+
+
+@pytest.mark.parametrize(
+    "chromosome, start, end",
+    [
+        ("AgamP4_2R", 48714541, 48714666),
+    ],
+)
+def test_cfd_score(chromosome, start, end):
+
+    genome = load_genome()
+    loc = locus_from_coordinates(genome, chromosome, start, end)
+
+    # find guides
+    loc.find_guides()
+    loc.find_off_targets()
+
+    guide = loc.guide(0)
+
+    assert "ot_cfd_score_mean" in guide.layers and "ot_cfd_score_max" in guide.layers
+
+    # test the expected values from cfd score

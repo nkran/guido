@@ -3,9 +3,9 @@ from collections import Counter
 import numpy as np
 from azimuth import model_comparison
 
-from .helpers import rev_comp
+from .helpers import load_cfd_scoring_matrix, rev_comp
 from .mmej import generate_mmej_patterns
-from .off_targets import calculate_ot_sum_score, run_bowtie
+from .off_targets import calculate_cfd_score, calculate_ot_sum_score, run_bowtie
 
 
 class Guide:
@@ -20,7 +20,9 @@ class Guide:
         chromosome="seq",
         start=0,
     ):
-        """Guide object.
+        """Guide class.
+
+        Defines a gRNA and its properties.
 
         Parameters
         ----------
@@ -122,14 +124,17 @@ class Guide:
         return "|".join([p["frame_shift"] for p in mmej_patterns])
 
     def simulate_end_joining(self, n_patterns=5, length_weight=20):
-        """[summary]
+        """Simulate Microhomology-Mediated End Joining (MMEJ) events for the
+        gRNA.
+
+        MMEJ scoring is based on the Bae et al. 2014 paper (https://doi.org/10.1038/nmeth.3015)
 
         Parameters
         ----------
         n_patterns : int, optional
-            [description], by default 5
+            Number of top-scoring MMEJ patterns to keep, by default 5
         length_weight : int, optional
-            [description], by default 20
+            Lengeth weight, by default 20
         """
 
         if "N" not in self.locus_seq:
@@ -175,17 +180,19 @@ class Guide:
         Bowtie. Bowtie index for the genome must be built before running this
         function.
 
+        Notes
+        -----
+        The off-targets are stored in the `off_targets` attribute. Based on the
+        off-targets, the following layers are added to the guide:
+
+        - ot_sum_score: sum of the off-target scores - the lower the better
+        - ot_cfd_score_mean: mean of the CFD scores of the off-targets
+        - ot_cfd_score_max: max CFD scores of the off-targets
+
         Parameters
         ----------
         genome : Genome
-            [description]
-
-        Raises
-        ------
-        ValueError
-            [description]
-        ValueError
-            [description]
+            Genome object with the Bowtie index built
         """
 
         if genome:
@@ -200,6 +207,16 @@ class Guide:
 
             self.off_targets = guides_offtargets[0]
             self.add_layer("ot_sum_score", calculate_ot_sum_score(self.off_targets))
+
+            # Load scoring matrices for CFD score calculation
+            mm_scores, pam_scores = load_cfd_scoring_matrix()
+
+            # Calculate CFD scores
+            cfd_scores = calculate_cfd_score(
+                self, self.off_targets, mm_scores, pam_scores
+            )
+            self.add_layer("ot_cfd_score_mean", cfd_scores.mean())
+            self.add_layer("ot_cfd_score_max", cfd_scores.max())
 
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")

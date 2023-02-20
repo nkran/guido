@@ -1,9 +1,9 @@
 import subprocess
 import tempfile
 
-from .helpers import rev_comp
+import numpy as np
 
-# TODO assuming PAM has at least one arbitrary nucleotide
+from .helpers import rev_comp
 
 
 def calculate_ot_sum_score(
@@ -16,6 +16,39 @@ def calculate_ot_sum_score(
             for ot in off_targets
         ]
     )
+
+
+def calculate_cfd_score(guide, offtargets, mm_scores, pam_scores):
+    """Calculate CFD score for a guide and a list of off-targets.
+
+    Adapted from Doench et al. 2016, https://doi.org/10.1038/nbt.3437
+    """
+
+    scores = []
+    wt = guide.guide_seq[: -len(guide.guide_pam)]
+
+    for ot in offtargets:
+        pam = guide.guide_pam[1:]
+        sg = ot["seq"][:20]
+
+        score = 1
+        sg = sg.replace("T", "U")
+        wt = wt.replace("T", "U")
+        s_list = list(sg)
+        wt_list = list(wt)
+
+        for i, sl in enumerate(s_list):
+            if wt_list[i] == sl:
+                score *= 1
+            else:
+                key = (
+                    "r" + wt_list[i] + ":d" + rev_comp(sl, rna=True) + "," + str(i + 1)
+                )
+                score *= mm_scores[key]
+        score *= pam_scores[pam]
+        scores.append(score)
+
+    return np.array(scores)
 
 
 def _parse_mismatches(mismatches, strand, seq_len):
@@ -121,7 +154,7 @@ def run_bowtie(
             universal_newlines=True,
         )
 
-        stdout, stderr = rproc.communicate()
+        stdout, _ = rproc.communicate()
 
         non_arbitrary_positions = [
             21 + ix for ix, nucl in enumerate(pam) if nucl in ["A", "T", "G", "C"]
@@ -145,6 +178,7 @@ def run_bowtie(
 
                 else:
                     t_seq = rev_comp(t_seq)
+                    g_seq = rev_comp(g_seq)
                     t_strand = "-"
 
                 mismatches = _parse_mismatches(t_mismatches, t_strand, len(t_seq))
@@ -161,12 +195,22 @@ def run_bowtie(
                         ]
                     )
 
+                    mm_seq = "".join(
+                        [
+                            mismatches[i + 1]
+                            if (i + 1) in mismatches.keys()
+                            else t_seq[i]
+                            for i, _ in enumerate(g_seq)
+                        ]
+                    )
+
                     off_target["ix"] = ix
                     off_target["mismatches"] = mismatches
                     off_target["mismatches_string"] = mm_string
                     off_target["chromosome"] = t_chrom
                     off_target["start"] = int(t_start)
                     off_target["strand"] = t_strand
+                    off_target["seq"] = mm_seq
 
                     off_targets[ix].append(off_target)
 

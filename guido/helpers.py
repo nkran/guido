@@ -1,11 +1,15 @@
+import os
+import pickle
 from shutil import which
 
 import numpy as np
 import pandas as pd
 
 
-def rev_comp(seq):
+def rev_comp(seq, rna=False):
     complement = {"A": "T", "C": "G", "G": "C", "T": "A", "N": "N"}
+    if rna:
+        complement = {"A": "T", "C": "G", "G": "C", "T": "A", "U": "A", "-": "-"}
     return "".join(
         [complement[base] if base in complement.keys() else "N" for base in seq[::-1]]
     )
@@ -15,6 +19,20 @@ def is_tool(name):
     """Check whether `name` is on PATH and marked as executable."""
     # from whichcraft import which
     return which(name) is not None
+
+
+def load_cfd_scoring_matrix():
+    mm_scores = pickle.load(
+        open(
+            os.path.dirname(os.path.realpath(__file__)) + "/data/mismatch_score.pkl",
+            "rb",
+        )
+    )
+    pam_scores = pickle.load(
+        open(os.path.dirname(os.path.realpath(__file__)) + "/data/PAM_scores.pkl", "rb")
+    )
+
+    return mm_scores, pam_scores
 
 
 def _guides_to_dataframe(guides):
@@ -28,7 +46,10 @@ def _guides_to_dataframe(guides):
                 g[lk] = lv
         guides_ext.append(g)
 
-    return pd.DataFrame(guides_ext)
+    df = pd.DataFrame(guides_ext)
+    df.index = df["id"]
+
+    return df
 
 
 def _guides_to_csv(guides, file):

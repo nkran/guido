@@ -6,19 +6,19 @@ from pyfaidx import Faidx, Fasta
 
 
 def check_file(filename, supported_ext):
-    """_summary_
+    """Check if file exists and has the right extension.
 
     Parameters
     ----------
-    filename : _type_
-        _description_
-    supported_ext : _type_
-        _description_
+    filename : str
+        Path to the file.
+    supported_ext : str
+        Supported file extensions.
 
     Returns
     -------
     bool
-        _description_
+        True if file exists and has the right extension, False otherwise.
     """
     filename = Path(filename)
     if filename.exists() and filename.suffix in supported_ext:
@@ -35,23 +35,18 @@ class Genome:
         annotation_file_abspath=None,
         bowtie_index_abspath=None,
     ):
-        """_summary_
+        """Genome class.
 
         Parameters
         ----------
-        genome_name : _type_
-            _description_
-        genome_file_abspath : _type_, optional
-            _description_, by default None
-        annotation_file_abspath : _type_, optional
-            _description_, by default None
-
-        Raises
-        ------
-        ValueError
-            _description_
-        ValueError
-            _description_
+        genome_name : str
+            Name of the genome.
+        genome_file_abspath : str, optional
+            Path to the genome Fasta file, by default None
+        annotation_file_abspath : str, optional
+            Path to the genome annotation file (GTF or GFF3), by default None
+        bowtie_index_abspath : str, optional
+            Path to the bowtie index files, by default None
         """
         self.genome_name = genome_name
         self._bowtie_ignore = False
@@ -81,12 +76,12 @@ class Genome:
 
     @property
     def is_built(self):
-        """_summary_
+        """Check if genome index is built.
 
         Returns
         -------
-        _type_
-            _description_
+        Bool
+            True if genome index is built, False otherwise.
         """
         ready = []
         if self.genome_file_abspath and self.fai_file:
@@ -118,18 +113,23 @@ class Genome:
         bowtie_ignore=False,
         bowtie_path="",
     ):
-        """_summary_
+        """Build genome index.
+
+        This method creates index files for the genome and annotation files and saves them
+        in a `.guido` file in the same directory as the genome Fasta file. This file can be
+        later loaded using :meth:`guido.genome.load_genome_from_file` without having to
+        re-build the index.
 
         Parameters
         ----------
         n_threads : int, optional
-            _description_, by default 1
+            Number of threads, by default 1
         save_pickle : bool, optional
-            _description_, by default True
+            Pickle the dictionary into `.guido` file, by default True
         bowtie_ignore : bool, optional
-            _description_, by default False
+            Ignore building bowtie index. Use if you already have bowtie index built, by default False
         bowtie_path : str, optional
-            _description_, by default ""
+            Path to bowtie binary if it's not in the path, by default ""
         """
 
         self._bowtie_ignore = bowtie_ignore
@@ -187,22 +187,21 @@ class Genome:
 
 
 def load_genome_from_file(guido_file):
-    """_summary_
+    """Load a genome from a .guido file. This file is created when a genome is
+    built. It contains all the information needed to use the genome. Guido
+    files are saved in the same directory as the genome FASTA file. They are
+    named after the genome name and have the .guido extension. Genome object
+    can be created by using the :method:`build` method.
 
     Parameters
     ----------
-    guido_file : _type_
-        _description_
+    guido_file : str
+        Path to the .guido file.
 
     Returns
     -------
-    _type_
-        _description_
-
-    Raises
-    ------
-    ValueError
-        _description_
+    Genome
+        :class:`Genome` object.
     """
 
     if Path(guido_file).exists():
