@@ -35,6 +35,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
+    "sphinx.ext.doctest",
     "numpydoc",
 ]
 
@@ -46,7 +47,7 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
-autodoc_mock_imports = ["pyfaidx", "allel", "pyranges"]
+autodoc_mock_imports = ["guido", "pyfaidx", "allel", "pyranges"]
 
 # -- Options for HTML output -------------------------------------------------
 

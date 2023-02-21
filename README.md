@@ -1,11 +1,16 @@
 # Guido
+[![Documentation Status](https://readthedocs.org/projects/guido/badge/?version=latest)](https://guido.readthedocs.io/en/latest/?badge=latest)
+<!-- [![PyPI version](https://badge.fury.io/py/guido.svg)](https://badge.fury.io/py/guido) -->
+
 Guido is a Python package developed to search for gRNA targets in any reference genome or DNA sequence. It integrates MMEJ prediction and scoring, off-target search, and allows users to define their own data layers that can be used in the gRNA evaluation and ranking.
 
 ## Installation
-Install `guido` Python package via PyPi using pip:
+Install `guido` and azimuth (dependency) via PyPi using pip:
 
 ```bash
 $ pip install guido
+$ pip install git+https://github.com/Biomatters/Azimuth
+
 ```
 
 Please note that `guido` requires `bowtie` to be installed on your system. Please follow the instructions on the [bowtie website](http://bowtie-bio.sourceforge.net/index.shtml) to install it.
@@ -70,11 +75,13 @@ After running `loc.find_guides()`, the `Locus` instance will contain a list of `
 
 ```python
 >>> loc.guides
+
     ['gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)',
      'gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|)',
      ...
      'gRNA-7(GTTTAACACAGGTCAAGCGGTGG|AgamP4_2R:48714637-48714659|-|'),
      'gRNA-8(TATGTTTAACACAGGTCAAGCGG|AgamP4_2R:48714640-48714662|-|)']
+
 ```
 
 You can access a gRNA by its index or a name:
@@ -88,7 +95,7 @@ You can access a gRNA by its index or a name:
 ```
 
 ## Docs
-TODO
+More extensive documentation can be found on [Read the Docs](https://guido.readthedocs.io/en/latest/).
 
 ## Developer setup
 Install [poetry](https://python-poetry.org/docs/#installation):

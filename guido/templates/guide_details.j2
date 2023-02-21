@@ -1,0 +1,73 @@
+{% for guide in guides -%}
+{% set cix = loop.index0 %}
+---
+{{ guide.id }} sequence: {{ guide.guide_seq }}
+Location: {{ guide.guide_chrom }}:{{ guide.guide_start }}-{{ guide.guide_end }} | Strand: {{ guide.guide_strand }}
+Ranking: {{ guide.rank }} | Rank score: {{ guide.rank_score }}
+
+{% if guide.mmej_patterns|length > 0 %}
+Top MMEJ patterns
+(Score, Causes frame shift, MMEJ deletion,  Microhomology sequence, Deletion sequence)
+{% for pattern in guide.mmej_patterns -%}
+{{ '%0.2f' % pattern.pattern_score }}	{{pattern.frame_shift}} | {{ pattern.left }}{{ pattern.right }}	{{ pattern.pattern }}	{{ pattern.deletion_seq }}
+{% endfor %}
+{% else -%}
+    MMEJ patterns were not generated (sequence contains 'N' or the option was disabled).
+{% endif %}
+
+Layers:
+{% for layer, val in guide.layers.items() -%}
+    {{layer}}: {{'%0.2f' % val}}
+{% endfor %}
+
+{% if guide.off_targets|length > 0 %}
+Off-targets
+CFD  | {{ guide.guide_seq }} [on-target]
+{% for off_target in guide.off_targets -%}
+{{ '%0.2f' % off_target.cfd_score }} | {{ off_target.mismatches_string }} {{ off_target.chromosome }}:{{ off_target.start }}-{{ off_target.start+23 }}	{{ off_target.strand }}
+{% endfor %}
+^
+CFD score - measures the probability of a given sequence to be a functional off-target
+{{ guide.off_targets_string}} - count of off-targets with a given number of mismatches
+{% else %}
+No off-targets found
+{% endif %}
+
+{% endfor %}
+
+{# {% if guide.variants_n > 0 -%}
+    Variation ({{ guide.variants_n }})
+{% if guide.strand == '-' -%}
+    {{ guide.guide | rev_comp}}
+{% else -%}
+    {{ guide.guide}}
+{% endif -%}
+{% for v in guide.variants_zipped -%}
+    {% set offset_l = v[0]|int - guide.guide_loc[1] - 1 -%}
+    {% set offset_r = guide.guide|length - offset_l - 1 -%}
+    {% for i in range(0, offset_l) -%} {{ '.' -}} {% endfor -%}
+        {{ v[1][0] -}}
+    {% for i in range(0, offset_r) -%} {{ '.' -}} {% endfor %}
+    {{- "  " }}{{ v[0]|int -}}{{- "  " }}{{- v[3][1] / v[3]|sum }}
+    {{- "  " }}{{- v[3][0]|string + "[" + v[2] + "]/" + v[3][1]|string + "[" + v[1][0] + "]" }}
+{% endfor -%}
+{% else -%}
+    No SNPs found at the target sequence.
+{% endif %}
+
+Conservation score: {{ guide.cons_score }}
+
+{% if targets_grp %}
+{% if cix in targets_grp.keys() %}
+Off-targets {{ guide.offtargets_str }}
+{% for target in targets_grp[cix] -%}
+{{ target.9 }}
+{{ target.diff }}	{{ target.2 }}:{{ target.3 }}
+{% endfor %}
+{% else %}
+No off-targets found
+{% endif %}
+{% endif %}
+#}
+
+---

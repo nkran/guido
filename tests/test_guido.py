@@ -177,9 +177,41 @@ def test_cfd_score(chromosome, start, end):
     # find guides
     loc.find_guides()
     loc.find_off_targets()
+    loc.add_azimuth_score()
+    loc.simulate_end_joining()
 
     guide = loc.guide(0)
 
     assert "ot_cfd_score_mean" in guide.layers and "ot_cfd_score_max" in guide.layers
+
+    # test the expected values from cfd score
+
+
+@pytest.mark.parametrize(
+    "chromosome, start, end",
+    [
+        ("AgamP4_2R", 48714541, 48714666),
+    ],
+)
+def test_ranking(chromosome, start, end):
+
+    genome = load_genome()
+    loc = locus_from_coordinates(genome, chromosome, start, end)
+
+    # find guides
+    loc.find_guides()
+    loc.find_off_targets()
+    loc.add_azimuth_score()
+    loc.simulate_end_joining()
+    loc.rank_guides()
+
+    assert loc.guide(0).rank == 3
+    assert loc.guide(0).rank_score == pytest.approx(0.4596, rel=1e-3)
+
+    assert loc.guide(1).rank_score == pytest.approx(0.6323, rel=1e-3)
+    assert loc.guide(1).rank == 2
+
+    assert loc.guide(0).rank > loc.guide(1).rank
+    assert loc.guide(1).rank_score > loc.guide(0).rank_score
 
     # test the expected values from cfd score

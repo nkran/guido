@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "guido"
-version = "0.1.3a0"
+version = "0.1.3"
 description = ""
 authors = ["Nace Kranjc <nace.kranjc@gmail.com>"]
 
@@ -15,8 +15,7 @@ h5py = "^3.3.0"
 scikit-allel = "^1.3.5"
 ncls = "^0.0.60"
 pandas = "^1.3.1"
-mcdm = {git = "https://github.com/akestoridis/mcdm.git"}
-biomatters-azimuth = {git = "https://github.com/Biomatters/Azimuth.git"}
+mcdm = "^1.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

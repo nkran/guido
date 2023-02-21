@@ -1,5 +1,5 @@
-guido
-=====
+Modules
+=======
 
 .. toctree::
    :maxdepth: 4
