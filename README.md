@@ -88,7 +88,7 @@ You can access a gRNA by its index or a name:
 ```
 
 ## Docs
-TODO
+More extensive documentation can be found on [Read the Docs](https://guido.readthedocs.io/en/latest/).
 
 ## Developer setup
 Install [poetry](https://python-poetry.org/docs/#installation):

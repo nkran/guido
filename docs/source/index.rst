@@ -10,6 +10,7 @@ Welcome to guido's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   installation
    getting_started
    modules
 

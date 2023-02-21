@@ -1,6 +1,3 @@
-guido package
-=============
-
 Submodules
 ----------
 
