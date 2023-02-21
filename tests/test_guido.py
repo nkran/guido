@@ -135,8 +135,8 @@ def test_find_offtargets(chromosome, start, end):
     assert calculate_ot_sum_score(loc.guide(0).off_targets) == 8
     assert calculate_ot_sum_score(loc.guide(1).off_targets) == 7
 
-    assert loc.guide(0).off_targets_string() == "0|0|0|0|1|5 (6)"
-    assert loc.guide(1).off_targets_string() == "0|0|0|0|0|7 (7)"
+    assert loc.guide(0).off_targets_string == "0|0|0|0|1|5 (6)"
+    assert loc.guide(1).off_targets_string == "0|0|0|0|0|7 (7)"
 
 
 @pytest.mark.parametrize(

@@ -4,9 +4,20 @@ from shutil import which
 
 import numpy as np
 import pandas as pd
+from jinja2 import Environment, FileSystemLoader
+
+EXCLUDED_ATTRS = [
+    "locus_seq",
+    "guide_long_seq",
+    "relative_cut_pos",
+    "mmej_patterns",
+    "off_targets",
+    "_layers",
+]
 
 
 def rev_comp(seq, rna=False):
+
     complement = {"A": "T", "C": "G", "G": "C", "T": "A", "N": "N"}
     if rna:
         complement = {"A": "T", "C": "G", "G": "C", "T": "A", "U": "A", "-": "-"}
@@ -22,6 +33,7 @@ def is_tool(name):
 
 
 def load_cfd_scoring_matrix():
+    """Load the cfd scoring matrix."""
     mm_scores = pickle.load(
         open(
             os.path.dirname(os.path.realpath(__file__)) + "/data/mismatch_score.pkl",
@@ -35,17 +47,26 @@ def load_cfd_scoring_matrix():
     return mm_scores, pam_scores
 
 
-def _guides_to_dataframe(guides):
-    guides_ext = []
-    for g in guides:
-        g = g.__dict__
-        for lk, lv in g["_layers"].items():
-            if isinstance(lv, np.ndarray):
-                g[lk] = lv.mean()
-            else:
-                g[lk] = lv
-        guides_ext.append(g)
+def _guide_instance_to_dict(guide):
+    """Convert a class instance to a dictionary."""
+    guide_dict = {}
+    for attr, value in guide.__dict__.items():
+        if attr not in EXCLUDED_ATTRS:
+            guide_dict[attr] = value
 
+    for lk, lv in guide.layers.items():
+        if isinstance(lv, np.ndarray):
+            guide_dict[lk] = lv.mean()
+        else:
+            guide_dict[lk] = lv
+
+    return guide_dict
+
+
+def _guides_to_dataframe(guides):
+    """Convert a list of guides to a pandas dataframe."""
+
+    guides_ext = [_guide_instance_to_dict(g) for g in guides]
     df = pd.DataFrame(guides_ext)
     df.index = df["id"]
 
@@ -53,20 +74,37 @@ def _guides_to_dataframe(guides):
 
 
 def _guides_to_csv(guides, file):
-    guides_df = _guides_to_dataframe(guides).drop(
-        ["mmej_patterns", "off_targets", "_layers"], errors="ignore"
-    )
+    """Write a list of guides to a csv file."""
+
+    guides_df = _guides_to_dataframe(guides)
     guides_df.to_csv(file)
 
     return None
 
 
 def _guides_to_bed(guides, file):
+    """Write a list of guides to a bed file."""
+
     guides_df = _guides_to_dataframe(guides).loc[
         :, ["guide_chrom", "guide_start", "guide_end", "id", "rank", "guide_strand"]
     ]
     guides_df.to_csv(file, sep="\t", header=False, index=False)
     return None
+
+
+def _guides_detailed_table(guides, file):
+    """Write a detailed list of guides to a text file."""
+
+    file_loader = FileSystemLoader(
+        os.path.dirname(os.path.realpath(__file__)) + "/templates/"
+    )
+    env = Environment(loader=file_loader)
+    env.filters["rev_comp"] = rev_comp
+    template = env.get_template("guide_details.j2")
+    output_details = template.render(guides=guides)
+
+    with open(file, "w") as f:
+        f.write(output_details)
 
 
 # def render_mmej_table(mmej_patterns):

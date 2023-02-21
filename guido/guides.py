@@ -188,6 +188,7 @@ class Guide:
         - ot_sum_score: sum of the off-target scores - the lower the better
         - ot_cfd_score_mean: mean of the CFD scores of the off-targets
         - ot_cfd_score_max: max CFD scores of the off-targets
+        - ot_cfd_score_sum: sum CFD scores of the off-targets
 
         Parameters
         ----------
@@ -215,12 +216,18 @@ class Guide:
             cfd_scores = calculate_cfd_score(
                 self, self.off_targets, mm_scores, pam_scores
             )
+
+            for ix, cfd in enumerate(cfd_scores.tolist()):
+                self.off_targets[ix]["cfd_score"] = cfd
+
             self.add_layer("ot_cfd_score_mean", cfd_scores.mean())
             self.add_layer("ot_cfd_score_max", cfd_scores.max())
+            self.add_layer("ot_cfd_score_sum", cfd_scores.sum())
 
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")
 
+    @property
     def off_targets_string(self):
         """Returns a string representation of the off-targets.
 
@@ -299,8 +306,8 @@ class Guide:
     def add_azimuth_score(self):
         """Apply Azimuth score to a list of guides.
 
-        Azimuth is a machine learning-based predictive modelling of CRISPR/Cas9 guide efficiency. Sometimes its reffered to as
-        Doench 2016 score.
+        Azimuth is a machine learning-based predictive modelling of CRISPR/Cas9 guide efficiency.
+        Sometimes its reffered to as Doench 2016 score.
 
         Described in https://doi.org/10.1038/nbt.3437 (Doench et al., 2016)
 

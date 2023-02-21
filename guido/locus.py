@@ -9,6 +9,7 @@ from pyfaidx import Fasta, Sequence
 
 from .guides import Guide
 from .helpers import (
+    _guides_detailed_table,
     _guides_to_bed,
     _guides_to_csv,
     _guides_to_dataframe,
@@ -88,6 +89,14 @@ class Locus:
                 self.end = self.start + len(self.sequence.seq)
 
         self.length = len(self.sequence)
+
+    def __repr__(self):
+        """Returns a string representation of the locus object."""
+        return f"Locus({self.chromosome}:{self.start}-{self.end})"
+
+    def to_dict(self):
+        """Converts the locus object to a dictionary."""
+        return self.__dict__
 
     def guide(self, ix):
         """Fetch a guide from the locus by its index or name.
@@ -347,7 +356,7 @@ class Locus:
             than in the genome which Locus is a part of. By default None.
         """
 
-        # TODO create mismatch/offtarget string to show in the table
+        # TODO refactor - the same is used in Guide class
 
         if external_genome:
             index_path = external_genome.bowtie_index
@@ -372,8 +381,13 @@ class Locus:
                     cfd_scores = calculate_cfd_score(
                         G, G.off_targets, mm_scores, pam_scores
                     )
+
+                    for ix, cfd in enumerate(cfd_scores.tolist()):
+                        G.off_targets[ix]["cfd_score"] = cfd
+
                     G.add_layer("ot_cfd_score_mean", cfd_scores.mean())
                     G.add_layer("ot_cfd_score_max", cfd_scores.max())
+                    G.add_layer("ot_cfd_score_sum", cfd_scores.sum())
 
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")
@@ -678,8 +692,13 @@ class Locus:
         else:
             raise ValueError("Filename required to save BED with gRNAs.")
 
-    # TODO: optimise saving a list of guides - include only numerical values
-    # TODO: save a detailed list of guides
+    def guides_detailed_table(self, filename):
+        """Save gRNAs in a detailed text file."""
+        if filename:
+            return _guides_detailed_table(self.guides, filename)
+        else:
+            raise ValueError("Filename required to save CSV with gRNAs.")
+
     # TODO: plot the locus
 
     def add_azimuth_score(self):
