@@ -1,5 +1,6 @@
 # Guido
 [![Documentation Status](https://readthedocs.org/projects/guido/badge/?version=latest)](https://guido.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/419776638.svg)](https://zenodo.org/badge/latestdoi/419776638)
 <!-- [![PyPI version](https://badge.fury.io/py/guido.svg)](https://badge.fury.io/py/guido) -->
 
 Guido is a Python package developed to search for gRNA targets in any reference genome or DNA sequence. It integrates MMEJ prediction and scoring, off-target search, and allows users to define their own data layers that can be used in the gRNA evaluation and ranking.
@@ -96,6 +97,10 @@ You can access a gRNA by its index or a name:
 
 ## Docs
 More extensive documentation can be found on [Read the Docs](https://guido.readthedocs.io/en/latest/).
+
+## Cite as
+Nace Kranjc, & Courty Thomas. (2023). nkran/guido: v0.1.3 (v0.1.3). Zenodo. https://doi.org/10.5281/zenodo.8056051
+
 
 ## Developer setup
 Install [poetry](https://python-poetry.org/docs/#installation):
