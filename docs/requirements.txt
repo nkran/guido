@@ -2,3 +2,5 @@ numpydoc
 sphinx
 sphinx-issues
 sphinx_rtd_theme
+readthedocs-sphinx-ext
+sphinx-autoapi

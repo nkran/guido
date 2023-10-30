@@ -13,8 +13,8 @@ First we need to create a `Genome` instance. This instance will be used to searc
 
     import guido
     genome = guido.Genome(genome_name='AgamP4',
-                              genome_file_abspath='data/AgamP4.fa',
-                              annotation_file_abspath='data/AgamP4.12.gtf')
+                          genome_file_abspath='data/AgamP4.fa',
+                          annotation_file_abspath='data/AgamP4.12.gtf')
 
 Build the FASTA index and bowtie index files and create a `AgamP4.guido` file in `genome_file_abspath` that contains the genome information and can be used to create a `Genome` instance next time without needing to build the genome indices again.
 
@@ -149,6 +149,7 @@ Layers can be added either to all gRNAs in the `Locus` instance or to a specific
 
 **Example: Adding Conservation score (Cs) to a locus**
 You can download the Cs for *Anopheles gambiae* from github repo `https://github.com/nkran/AgamP4_conservation_score <https://github.com/nkran/AgamP4_conservation_score>`_.
+Follow the instructions in the README file to download the data and create the `AgamP4_conservation.h5` file. Then, you can add the Cs layer to the `Locus` instance:
 
 .. code-block:: python
 

@@ -12,8 +12,6 @@ Welcome to guido's documentation!
 
    installation
    getting_started
-   modules
-
 
 Indices and tables
 ==================

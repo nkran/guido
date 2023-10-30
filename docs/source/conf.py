@@ -31,11 +31,11 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
     "sphinx.ext.doctest",
+    "autoapi.extension",
     "numpydoc",
 ]
 
@@ -47,7 +47,7 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
-autodoc_mock_imports = ["guido", "pyfaidx", "allel", "pyranges"]
+autodoc_mock_imports = ["azimuth", "pyfaidx", "allel", "pyranges", "guido"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -71,3 +71,6 @@ pygments_style = "sphinx"
 numpydoc_show_class_members = False
 numpydoc_show_inherited_class_members = False
 numpydoc_class_members_toctree = False
+
+# autogenerate stubs
+autoapi_dirs = ["../../guido/"]

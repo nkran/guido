@@ -11,10 +11,19 @@ Install `guido` and azimuth (dependency) via PyPi using pip:
 ```bash
 $ pip install guido
 $ pip install git+https://github.com/Biomatters/Azimuth
-
 ```
 
 Please note that `guido` requires `bowtie` to be installed on your system. Please follow the instructions on the [bowtie website](http://bowtie-bio.sourceforge.net/index.shtml) to install it.
+
+Additionaly, `guido` requires `tabix` to be installed in order to search for off-targets.
+Please follow the instructions on the [htslib website](https://github.com/samtools/htslib) to install it.
+
+Alternatively, you can install both bowtie and tabix by using conda:
+
+```bash
+$ conda install -c bioconda bowtie
+$ conda install -c bioconda tabix
+```
 
 ## Usage
 You can use `guido` to search for gRNAs in a reference genome or DNA sequence. The following example shows how to search for gRNAs in the malaria mosquito (*Anopheles gambiae*) reference genome (AgamP4):
