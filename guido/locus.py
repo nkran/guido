@@ -15,7 +15,12 @@ from .helpers import (
     _guides_to_dataframe,
     load_cfd_scoring_matrix,
 )
-from .off_targets import calculate_cfd_score, calculate_ot_sum_score, run_bowtie
+from .off_targets import (
+    calculate_cfd_score,
+    calculate_ot_sum_score,
+    get_off_targets_string,
+    run_bowtie,
+)
 
 
 class Locus:
@@ -376,6 +381,7 @@ class Locus:
                 if ix in guides_bowtie_offtargets.keys():
                     G.off_targets = guides_bowtie_offtargets[ix]
                     G.add_layer("ot_sum_score", calculate_ot_sum_score(G.off_targets))
+                    G.off_target_str = get_off_targets_string(G.off_targets)
 
                     # Calculate CFD scores
                     cfd_scores = calculate_cfd_score(
@@ -385,9 +391,15 @@ class Locus:
                     for ix, cfd in enumerate(cfd_scores.tolist()):
                         G.off_targets[ix]["cfd_score"] = cfd
 
-                    G.add_layer("ot_cfd_score_mean", cfd_scores.mean())
-                    G.add_layer("ot_cfd_score_max", cfd_scores.max())
-                    G.add_layer("ot_cfd_score_sum", cfd_scores.sum())
+                    # scores are empty if there are no off-targets, set nan
+                    if len(cfd_scores) == 0:
+                        G.add_layer("ot_cfd_score_mean", np.nan)
+                        G.add_layer("ot_cfd_score_max", np.nan)
+                        G.add_layer("ot_cfd_score_sum", np.nan)
+                    else:
+                        G.add_layer("ot_cfd_score_mean", cfd_scores.mean())
+                        G.add_layer("ot_cfd_score_max", cfd_scores.max())
+                        G.add_layer("ot_cfd_score_sum", cfd_scores.sum())
 
         else:
             raise ValueError("Bowtie index is not built for the genome / locus.")
@@ -621,9 +633,6 @@ class Locus:
         -------
         list
             List of ranked guides.
-
-        TODO: - How do I handle instances where a layer exists only on some guides?
-              - nan vs 0 when no data on var layers
         """
 
         if len(self.guides) == 0:
@@ -655,6 +664,11 @@ class Locus:
             layer_names = list(guide_layer_names) + list(self._layers.keys())
 
         x_matrix = self._prepare_alt_matrix(rank_layer_names=layer_names)
+
+        # handle edge values
+        x_matrix[np.isnan(x_matrix)] = 0
+        x_matrix[x_matrix < 0] = 0
+
         rank_scores = mcdm.rank(
             x_matrix,
             n_method=norm_method,

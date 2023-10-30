@@ -18,6 +18,16 @@ def calculate_ot_sum_score(
     )
 
 
+def get_off_targets_string(off_targets, pam="NGG"):
+    """Get a string representation of a list of off-targets."""
+    count_matrix = [0, 0, 0, 0, 0]
+
+    for ot in off_targets:
+        count_matrix[len(ot["mismatches"]) - pam.count("N")] += 1
+
+    return "|".join([str(c) for c in count_matrix])
+
+
 def calculate_cfd_score(guide, offtargets, mm_scores, pam_scores):
     """Calculate CFD score for a guide and a list of off-targets.
 

@@ -79,7 +79,7 @@ You can access a gRNA by its index or a name:
     'gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)'
 
 
-Analys
+Analysis
 ================
 You can analyze the gRNAs using the different methods. For example `loc.simulate_end_joining()` will simulate MMEJ events for each gRNA in the `Locus` instance and will attach the results to the `Guide` instances.
 Other useful methods include: `loc.find_off_targets()` and `loc.add_azimuth_score()`,  which will search for off-target sites and add the Azimuth score (on-target sgRNA activity score) to the `Guide` instances, respectively.
@@ -89,7 +89,7 @@ Other useful methods include: `loc.find_off_targets()` and `loc.add_azimuth_scor
     import guido
     genome = guido.load_genome_from_file(guido_file='data/AgamP4.guido')
     loc = guido.locus_from_coordinates(genome, 'AgamP4_2R', 48714541, 48714666)
-    loc.find_guides(feature_type='exon')
+    loc.find_guides(selected_features={'exon'})
 
     loc.simulate_end_joining()
     loc.find_off_targets()
@@ -145,6 +145,26 @@ The description of the different layers can be found in the `Guide` class docume
 Layers can be added either to all gRNAs in the `Locus` instance or to a specific gRNA. To add a layer to a specific gRNA, use the `guide.add_layer()` method.
 
 .. note::  When adding a layer to the locus, you need to ensure the length of the layer data is equal to the length of the locus sequence. Each gRNA will then have this layer applied with the values corresponding to the gRNA sequence.
+
+
+**Example: Adding Conservation score (Cs) to a locus**
+You can download the Cs for *Anopheles gambiae* from github repo `https://github.com/nkran/AgamP4_conservation_score <https://github.com/nkran/AgamP4_conservation_score>`_.
+
+.. code-block:: python
+
+    import h5py
+    import numpy as np
+
+    with h5py.File('path/to/AgamP4_conservation.h5', mode='r+') as data_h5:
+        snp_density = data_h5[l.chromosome.split('_')[1]]['snp_density'][0,l.start-1:l.end]
+        phylop =      data_h5[l.chromosome.split('_')[1]]['phyloP'][0,l.start-1:l.end]
+        cs =          data_h5[l.chromosome.split('_')[1]]['Cs'][0,l.start-1:l.end]
+
+    l.add_layer('cs', layer_data=np.array(cs))
+
+    rank = l.rank_guides(layer_names=['mmej_sum_score', 'mmej_oof_score', 'azimuth_score', 'ot_sum_score', 'ot_cfd_score_mean', 'ot_cfd_score_max', 'ot_cfd_score_sum', 'cs'],\
+                        layer_is_benefit=[True, True, True, False, True, True, True, True])
+
 
 Ranking
 =================

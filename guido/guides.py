@@ -1,3 +1,5 @@
+import os
+import warnings
 from collections import Counter
 
 import numpy as np
@@ -6,6 +8,9 @@ from azimuth import model_comparison
 from .helpers import load_cfd_scoring_matrix, rev_comp
 from .mmej import generate_mmej_patterns
 from .off_targets import calculate_cfd_score, calculate_ot_sum_score, run_bowtie
+
+# suppress warnings from azimuth
+warnings.filterwarnings("ignore")
 
 
 class Guide:
@@ -95,6 +100,7 @@ class Guide:
 
         # Off-targets
         self.off_targets = []
+        self.off_target_str = ""
 
         # Layers
         self._layers = {}
@@ -303,7 +309,7 @@ class Guide:
         else:
             raise ValueError(f"Layer {key} was not added to the gRNA.")
 
-    def add_azimuth_score(self):
+    def add_azimuth_score(self, model_file="V3_model_nopos.pickle"):
         """Apply Azimuth score to a list of guides.
 
         Azimuth is a machine learning-based predictive modelling of CRISPR/Cas9 guide efficiency.
@@ -326,7 +332,12 @@ class Guide:
         ):
             score_azimuth = float(
                 model_comparison.predict(
-                    np.array([self.guide_long_seq]), length_audit=True, pam_audit=True
+                    np.array([self.guide_long_seq]),
+                    length_audit=True,
+                    pam_audit=True,
+                    model_file=os.path.dirname(os.path.realpath(__file__))
+                    + "/data/"
+                    + model_file,
                 )[0]
             )
         else:

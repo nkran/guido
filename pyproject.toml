@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "guido"
-version = "0.1.3"
+version = "0.1.4a0"
 description = ""
 authors = ["Nace Kranjc <nace.kranjc@gmail.com>"]
 
