@@ -13,7 +13,7 @@ $ pip install guido
 $ pip install git+https://github.com/Biomatters/Azimuth
 ```
 
-Please note that `guido` requires `bowtie` to be installed on your system. Please follow the instructions on the [bowtie website](http://bowtie-bio.sourceforge.net/index.shtml) to install it.
+Please note that `guido` requires `bowtie` v1.3.1 to be installed on your system. Please follow the instructions on the [bowtie website](http://bowtie-bio.sourceforge.net/index.shtml) to install it.
 
 Additionaly, `guido` requires `tabix` to be installed in order to search for off-targets.
 Please follow the instructions on the [htslib website](https://github.com/samtools/htslib) to install it.
@@ -106,6 +106,9 @@ You can access a gRNA by its index or a name:
 
 ## Docs
 More extensive documentation can be found on [Read the Docs](https://guido.readthedocs.io/en/latest/).
+
+## Examples
+You can find a Jupyter notebook with examples in the `notebook/` directory.
 
 ## Cite as
 Nace Kranjc, & Courty Thomas. (2023). nkran/guido: v0.1.3 (v0.1.3). Zenodo. https://doi.org/10.5281/zenodo.8056051
