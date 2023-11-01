@@ -214,7 +214,7 @@ class Locus:
         self,
         pam="NGG",
         min_flanking_length=0,
-        selected_features={"all"},
+        selected_features="all",
     ):
         """Find gRNAs in the locus.
 
@@ -255,7 +255,7 @@ class Locus:
 
         Searching for gRNAs in a specific genomic feature:
 
-        >>> loc.find_guides(selected_features={"exon"})
+        >>> loc.find_guides(selected_features="exon")
         >>> loc.guides
         [gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|),
         gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|),
@@ -844,7 +844,8 @@ def locus_from_gene(genome, gene_name):
             end = int(gene_annotation.End)
 
             locus_annotation = ann_db.query(
-                f"(ID == @gene_name) & (Chromosome == @chromosome) &  \
+                f"((ID == @gene_name) | (Parent == @gene_name) | (gene_id == @gene_name)) & \
+                  (Chromosome == @chromosome) &  \
                   (((Start >= {start}) & (Start <= {end})) | \
                   ((End >= {start}) & (End <= {end})))"
             )

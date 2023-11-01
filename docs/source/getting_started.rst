@@ -50,7 +50,7 @@ Find gRNAs
     import guido
 
     loc = guido.locus_from_gene(genome, 'AGAP005958')
-    loc.find_guides(feature_type='exon')
+    loc.find_guides(selected_features='exon')
     ['gRNA-1(AAGTTTATCATCCACTCTGACGG|AgamP4_2R:48714550-48714572|+|)',
     'gRNA-2(CGCAATACCACCCGTCAGAGTGG|AgamP4_2R:48714561-48714583|-|)',
     ...
@@ -89,7 +89,7 @@ Other useful methods include: `loc.find_off_targets()` and `loc.add_azimuth_scor
     import guido
     genome = guido.load_genome_from_file(guido_file='data/AgamP4.guido')
     loc = guido.locus_from_coordinates(genome, 'AgamP4_2R', 48714541, 48714666)
-    loc.find_guides(selected_features={'exon'})
+    loc.find_guides(selected_features='exon')
 
     loc.simulate_end_joining()
     loc.find_off_targets()

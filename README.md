@@ -79,7 +79,7 @@ Alternatively, you can use the `locus_from_gene()` function to create a `Locus` 
 >>> import guido
 >>> loc = guido.locus_from_gene(genome, 'AGAP005958')
 
->>> loc.find_guides(feature_type='exon')
+>>> loc.find_guides(selected_features='exon')
 ```
 
 After running `loc.find_guides()`, the `Locus` instance will contain a list of `gRNA` instances that can be accessed using the `loc.guides` attribute.
