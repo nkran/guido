@@ -4,3 +4,4 @@ sphinx-issues
 sphinx_rtd_theme
 readthedocs-sphinx-ext
 sphinx-autoapi
+requests>=2.32.0 # not directly required, pinned by Snyk to avoid a vulnerability
