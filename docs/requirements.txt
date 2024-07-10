@@ -4,3 +4,4 @@ sphinx-issues
 sphinx_rtd_theme
 readthedocs-sphinx-ext
 sphinx-autoapi
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
